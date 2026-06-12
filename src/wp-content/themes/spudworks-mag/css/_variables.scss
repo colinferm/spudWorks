@@ -1,0 +1,34 @@
+// spudWorks Magazine - design tokens.
+// Dark, editorial palette with a restrained black/yellow hazard accent.
+
+// --- Palette ---------------------------------------------------------------
+$ink:        #0e0f12; // page background, deepest
+$ink-panel:  #16181d; // raised panels / cards
+$ink-rule:   #25282f; // hairline borders
+$paper:      #e9e5db; // primary body text on dark
+$paper-dim:  #a7a59d; // secondary text, meta, captions
+
+$hazard-yellow: #f4c20d; // accent + hazard stripe
+$hazard-black:  #0a0a0a; // hazard stripe dark band
+$accent:        #ffce26; // links / interactive highlight
+$accent-deep:   #c8990a; // link hover
+
+// --- Type ------------------------------------------------------------------
+$sans:  'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+$weight-regular: 400;
+$weight-medium:  500;
+$weight-bold:    700;
+$weight-black:   900;
+
+// --- Measure / spacing -----------------------------------------------------
+$content-measure: 720px; // readable column cap (per spec)
+$wide-measure:    1280px; // page container cap
+$gap:             1.5rem;
+
+// --- Breakpoints -----------------------------------------------------------
+$bp-sm: 480px;
+$bp-md: 768px;
+$bp-lg: 1024px;
+$bp-xl: 1280px;

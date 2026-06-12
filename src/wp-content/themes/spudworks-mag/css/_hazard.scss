@@ -1,0 +1,44 @@
+// The black/yellow hazard-stripe motif. Used sparingly as an accent so the
+// theme reads as editorial rather than fan-site.
+
+// Diagonal hazard band, reusable as a token.
+@mixin hazard-stripes($height: 8px, $size: 22px) {
+	height: $height;
+	border: 0;
+	background-image: repeating-linear-gradient(
+		-45deg,
+		$hazard-black 0,
+		$hazard-black ($size * 0.5),
+		$hazard-yellow ($size * 0.5),
+		$hazard-yellow $size
+	);
+}
+
+// Distinct horizontal rule: a thin hazard stripe.
+hr,
+.hazard-rule {
+	@include hazard-stripes(6px, 20px);
+	width: 100%;
+	margin: 2.5rem 0;
+	opacity: 0.92;
+}
+
+// A thinner inline accent used to flag section headings, etc.
+.hazard-accent {
+	@include hazard-stripes(4px, 16px);
+	width: 64px;
+	margin: 0.75rem 0;
+}
+
+// Full-bleed hazard fill used as the standing-in motif whenever a content box
+// has no featured image. Slightly muted so a wall of fallbacks stays tasteful.
+@mixin hazard-panel($size: 30px) {
+	background-color: $hazard-black;
+	background-image: repeating-linear-gradient(
+		-45deg,
+		rgba($hazard-black, 0.96) 0,
+		rgba($hazard-black, 0.96) ($size * 0.5),
+		rgba(125, 98, 8, 0.96) ($size * 0.5),
+		rgba(125, 98, 8, 0.96) $size
+	);
+}

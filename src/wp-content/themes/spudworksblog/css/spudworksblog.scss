@@ -1,0 +1,27 @@
+$spudworks-red: #8D0900;
+$spudworks-tan: #FFBF7F;
+$spudworks-orange: #ff7f00;
+
+html {
+	body {
+		.bg-red {
+			background-color: $spudworks-red !important;
+		}
+
+		.bg-orange {
+			background-color: $spudworks-orange !important;
+		}
+
+		.bg-tan {
+			background-color: $spudworks-tan !important;
+		}
+	}
+
+	nav {
+		.navbar-brand {
+			img {
+				max-height: 35px;
+			}
+		}
+	}
+}

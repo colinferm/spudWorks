@@ -1,0 +1,213 @@
+<?php
+/**
+ * spudWorks Magazine — display + query helpers.
+ *
+ * These are deliberately built on WP_Query and the core meta/term APIs rather
+ * than raw SQL so the theme behaves correctly on any subsite of a multisite
+ * network and degrades gracefully against arbitrary content.
+ */
+
+/**
+ * One "beat" of the varied card rhythm used by the home grid and archives.
+ * Cycling this across a list of posts yields an irregular, hand-composed
+ * layout rather than a uniform matrix. Returns array('tpl' => ..., 'span' => ...).
+ * Spans only take effect at the 6-column desktop breakpoint.
+ */
+function spudmagCardBeat($index) {
+	$rhythm = array(
+		array('tpl' => 'card-overlay', 'span' => 'span-3 row-2'),
+		array('tpl' => 'card-under',   'span' => 'span-3'),
+		array('tpl' => 'card-under',   'span' => 'span-3'),
+		array('tpl' => 'card-overlay', 'span' => 'span-2'),
+		array('tpl' => 'card-under',   'span' => 'span-2'),
+		array('tpl' => 'card-under',   'span' => 'span-2'),
+		array('tpl' => 'card-under',   'span' => 'span-4'),
+		array('tpl' => 'card-overlay', 'span' => 'span-2 row-2'),
+		array('tpl' => 'card-under',   'span' => 'span-3'),
+		array('tpl' => 'card-overlay', 'span' => 'span-3'),
+		array('tpl' => 'card-under',   'span' => 'span-2'),
+		array('tpl' => 'card-under',   'span' => 'span-4')
+	);
+	return $rhythm[$index % count($rhythm)];
+}
+
+/**
+ * The chosen content template for a post: 'default', 'fiction', or 'showcase'.
+ */
+function spudmagGetTemplate($postId) {
+	$value = get_post_meta($postId, METATEMPLATE, true);
+	$allowed = array('default', 'fiction', 'showcase');
+	return in_array($value, $allowed, true) ? $value : 'default';
+}
+
+/**
+ * The optional secondary headline for a post (empty string if none).
+ */
+function spudmagGetSubhead($postId) {
+	return trim((string) get_post_meta($postId, METASUBHEAD, true));
+}
+
+/**
+ * Whether a post is pinned to the top of the home page.
+ */
+function spudmagIsPinned($postId) {
+	return (bool) get_post_meta($postId, METAPINNED, true);
+}
+
+/**
+ * Output up to $max tag/category "chips" for a post, tags first.
+ * Renders nothing if the post has no terms.
+ */
+function spudmagTermChips($postId, $max = 3) {
+	$terms = array();
+
+	$tags = get_the_tags($postId);
+	if (is_array($tags)) {
+		$terms = array_merge($terms, $tags);
+	}
+
+	if (count($terms) < $max) {
+		$cats = get_the_category($postId);
+		if (is_array($cats)) {
+			foreach ($cats as $cat) {
+				if ($cat->slug === 'uncategorized') {
+					continue;
+				}
+				$terms[] = $cat;
+			}
+		}
+	}
+
+	if (empty($terms)) {
+		return;
+	}
+
+	$terms = array_slice($terms, 0, $max);
+	echo '<ul class="term-chips">';
+	foreach ($terms as $term) {
+		$link = get_term_link($term);
+		if (is_wp_error($link)) {
+			continue;
+		}
+		echo '<li><a href="' . esc_url($link) . '">' . esc_html($term->name) . '</a></li>';
+	}
+	echo '</ul>';
+}
+
+/**
+ * Whether a byline should be shown for this post. The design hides bylines
+ * gracefully; an author with no public display name suppresses it.
+ */
+function spudmagHasByline($postId) {
+	$author = (int) get_post_field('post_author', $postId);
+	return $author > 0 && get_the_author_meta('display_name', $author) !== '';
+}
+
+/**
+ * Posts for the home grid: the pinned post (if any) is returned first,
+ * followed by the most recent posts, excluding the pinned one.
+ *
+ * Returns an array with keys 'pinned' (WP_Post|null) and 'items' (WP_Post[]).
+ */
+function spudmagHomeItems($count = 12) {
+	$pinned = null;
+
+	$pinnedQuery = new WP_Query(array(
+		'post_type'           => 'post',
+		'post_status'         => 'publish',
+		'posts_per_page'      => 1,
+		'ignore_sticky_posts' => true,
+		'meta_key'            => METAPINNED,
+		'meta_value'          => '1',
+		'no_found_rows'       => true
+	));
+	if ($pinnedQuery->have_posts()) {
+		$pinned = $pinnedQuery->posts[0];
+	}
+	wp_reset_postdata();
+
+	$exclude = $pinned ? array($pinned->ID) : array();
+
+	$itemsQuery = new WP_Query(array(
+		'post_type'           => 'post',
+		'post_status'         => 'publish',
+		'posts_per_page'      => $count,
+		'ignore_sticky_posts' => true,
+		'post__not_in'        => $exclude,
+		'no_found_rows'       => true
+	));
+	$items = $itemsQuery->posts;
+	wp_reset_postdata();
+
+	return array('pinned' => $pinned, 'items' => $items);
+}
+
+/**
+ * Related stories for a post, ranked tags-first.
+ *
+ * Candidates are gathered by shared tags (then shared categories) and scored by
+ * how many tags they share; ties break toward more recent posts. Falls back to
+ * recent posts in the same categories when there is no tag overlap.
+ *
+ * @return WP_Post[]
+ */
+function spudmagRelatedStories($postId, $count = 4) {
+	$tagIds = wp_get_post_tags($postId, array('fields' => 'ids'));
+	$catIds = wp_get_post_categories($postId, array('fields' => 'ids'));
+
+	$candidates = array();
+
+	if (!empty($tagIds)) {
+		$byTag = new WP_Query(array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'posts_per_page'      => 20,
+			'ignore_sticky_posts' => true,
+			'post__not_in'        => array($postId),
+			'tag__in'             => $tagIds,
+			'orderby'             => 'date',
+			'order'               => 'DESC',
+			'no_found_rows'       => true
+		));
+		foreach ($byTag->posts as $candidate) {
+			$shared = array_intersect($tagIds, wp_get_post_tags($candidate->ID, array('fields' => 'ids')));
+			$candidates[$candidate->ID] = array('post' => $candidate, 'score' => count($shared));
+		}
+		wp_reset_postdata();
+	}
+
+	if (count($candidates) < $count && !empty($catIds)) {
+		$byCat = new WP_Query(array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'posts_per_page'      => 20,
+			'ignore_sticky_posts' => true,
+			'post__not_in'        => array_merge(array($postId), array_keys($candidates)),
+			'category__in'        => $catIds,
+			'orderby'             => 'date',
+			'order'               => 'DESC',
+			'no_found_rows'       => true
+		));
+		foreach ($byCat->posts as $candidate) {
+			$candidates[$candidate->ID] = array('post' => $candidate, 'score' => 0);
+		}
+		wp_reset_postdata();
+	}
+
+	// Sort by tag-overlap score, then by recency.
+	uasort($candidates, function($a, $b) {
+		if ($a['score'] !== $b['score']) {
+			return $b['score'] - $a['score'];
+		}
+		return strcmp($b['post']->post_date, $a['post']->post_date);
+	});
+
+	$related = array();
+	foreach ($candidates as $entry) {
+		$related[] = $entry['post'];
+		if (count($related) >= $count) {
+			break;
+		}
+	}
+	return $related;
+}

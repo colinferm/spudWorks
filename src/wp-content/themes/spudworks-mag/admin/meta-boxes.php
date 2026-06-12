@@ -1,0 +1,121 @@
+<?php
+/**
+ * spudWorks Magazine — post edit-screen meta boxes.
+ *
+ * Adds three controls to the post editor, stored as post meta and read at
+ * display time:
+ *   - Template selector  -> METATEMPLATE  (default | fiction | showcase)
+ *   - Secondary headline -> METASUBHEAD   (free text shown under the headline)
+ *   - Pinned             -> METAPINNED    (promotes the post on the home page)
+ */
+
+/**
+ * Register the meta box on the post edit screen.
+ */
+function spudmagAddMetaBox() {
+	add_meta_box(
+		'spudmag-options',
+		__('spudWorks Magazine', 'spudworks-mag'),
+		'spudmagRenderMetaBox',
+		'post',
+		'side',
+		'high'
+	);
+}
+add_action('add_meta_boxes', 'spudmagAddMetaBox');
+
+/**
+ * Render the meta box fields.
+ */
+function spudmagRenderMetaBox($post) {
+	wp_nonce_field('spudmag_save_meta', 'spudmag_meta_nonce');
+
+	$template = spudmagGetTemplate($post->ID);
+	$subhead = spudmagGetSubhead($post->ID);
+	$pinned = spudmagIsPinned($post->ID);
+
+	$templates = array(
+		'default'  => __('Default', 'spudworks-mag'),
+		'fiction'  => __('Fiction', 'spudworks-mag'),
+		'showcase' => __('Showcase', 'spudworks-mag')
+	);
+	?>
+	<p>
+		<label for="spudmag-template"><strong><?php esc_html_e('Content template', 'spudworks-mag'); ?></strong></label><br>
+		<select name="spudmag_template" id="spudmag-template" class="widefat">
+			<?php foreach ($templates as $value => $label) : ?>
+				<option value="<?php echo esc_attr($value); ?>" <?php selected($template, $value); ?>>
+					<?php echo esc_html($label); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+	</p>
+	<p>
+		<label for="spudmag-subhead"><strong><?php esc_html_e('Secondary headline', 'spudworks-mag'); ?></strong></label><br>
+		<input type="text" name="spudmag_subhead" id="spudmag-subhead" class="widefat" value="<?php echo esc_attr($subhead); ?>">
+	</p>
+	<p>
+		<label for="spudmag-pinned">
+			<input type="checkbox" name="spudmag_pinned" id="spudmag-pinned" value="1" <?php checked($pinned, true); ?>>
+			<?php esc_html_e('Pin to top of home page', 'spudworks-mag'); ?>
+		</label>
+	</p>
+	<?php
+}
+
+/**
+ * Persist the meta box values, with nonce + capability + sanitization checks.
+ */
+function spudmagSaveMeta($postId) {
+	if (!isset($_POST['spudmag_meta_nonce']) || !wp_verify_nonce($_POST['spudmag_meta_nonce'], 'spudmag_save_meta')) {
+		return;
+	}
+	if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+		return;
+	}
+	if (!current_user_can('edit_post', $postId)) {
+		return;
+	}
+
+	$allowed = array('default', 'fiction', 'showcase');
+	$template = isset($_POST['spudmag_template']) ? sanitize_key($_POST['spudmag_template']) : 'default';
+	if (!in_array($template, $allowed, true)) {
+		$template = 'default';
+	}
+	update_post_meta($postId, METATEMPLATE, $template);
+
+	// Allow inline HTML in the secondary headline (matches the main headline);
+	// wp_kses_post permits formatting tags while stripping anything dangerous.
+	$subhead = isset($_POST['spudmag_subhead']) ? wp_kses_post(wp_unslash($_POST['spudmag_subhead'])) : '';
+	update_post_meta($postId, METASUBHEAD, $subhead);
+
+	// A single pinned post at a time keeps the home page deterministic: setting
+	// one clears any previously pinned post on this site.
+	if (!empty($_POST['spudmag_pinned'])) {
+		spudmagClearPinned($postId);
+		update_post_meta($postId, METAPINNED, '1');
+	} else {
+		delete_post_meta($postId, METAPINNED);
+	}
+}
+add_action('save_post', 'spudmagSaveMeta');
+
+/**
+ * Remove the pinned flag from every post except $keepId.
+ */
+function spudmagClearPinned($keepId) {
+	$pinned = get_posts(array(
+		'post_type'           => 'post',
+		'post_status'         => 'any',
+		'posts_per_page'      => -1,
+		'fields'              => 'ids',
+		'ignore_sticky_posts' => true,
+		'meta_key'            => METAPINNED,
+		'meta_value'          => '1'
+	));
+	foreach ($pinned as $id) {
+		if ((int) $id !== (int) $keepId) {
+			delete_post_meta($id, METAPINNED);
+		}
+	}
+}

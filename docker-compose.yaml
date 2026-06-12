@@ -1,0 +1,48 @@
+version: "3.7"
+
+services:
+  web-server:
+    build:
+      dockerfile: wordpress-php8.Dockerfile
+      context: .
+    container_name: spudworks-web-server
+    environment:
+      MYSQL_HOST: mysql-server
+      MYSQL_USER: spudworks
+      MYSQL_PASSWORD: spudworks
+      NODE_ENV: development
+      DOMAIN_NAME: localhost
+    volumes:
+      - "./src/wp-content/themes/:/var/www/html/wp-content/themes"
+    ports:
+      - "8080:80"
+
+  mysql-server:
+    image: mysql:8.0
+    container_name: spudworks-mysql-server
+    environment:
+      MYSQL_ROOT_PASSWORD: spudworks
+      MYSQL_USER: spudworks
+      MYSQL_PASSWORD: spudworks
+      MYSQL_DATABASE: spudworks
+    volumes:
+      - spudworks-mysql-data:/var/lib/mysql
+      - ./data:/docker-entrypoint-initdb.d
+    ports:
+      - "33060:3306"
+
+  mariadb-server:
+    image: mariadb:10.5
+    container_name: spudworks-mariadb-server
+    environment:
+      MARIADB_ROOT_PASSWORD: spudworks
+      MARIADB_DATABASE: spudworks
+      MARIADB_USER: spudworks
+      MARIADB_PASSWORD: spudworks
+    volumes:
+      - spudworks-mysql-data:/var/lib/mariadb
+    ports:
+      - "33061:3306"
+
+volumes:
+  spudworks-mysql-data:

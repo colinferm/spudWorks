@@ -1,0 +1,6 @@
+{
+    "explorer.confirmDragAndDrop": false,
+    "editor.insertSpaces": false,
+    "redhat.telemetry.enabled": false,
+    "php.validate.executablePath": "php"
+}

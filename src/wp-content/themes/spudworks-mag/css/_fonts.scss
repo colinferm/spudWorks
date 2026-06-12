@@ -1,0 +1,26 @@
+// Self-hosted variable fonts (no CDN). Single variable file per family/style,
+// with the full weight range exposed via the font-weight descriptor.
+
+@font-face {
+	font-family: 'Space Grotesk';
+	src: url('../fonts/space-grotesk-variable.woff2') format('woff2');
+	font-weight: 300 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Fraunces';
+	src: url('../fonts/fraunces-variable.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Fraunces';
+	src: url('../fonts/fraunces-italic-variable.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: italic;
+	font-display: swap;
+}

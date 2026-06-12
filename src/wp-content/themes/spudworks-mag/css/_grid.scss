@@ -1,0 +1,69 @@
+// Layout primitives: responsive helpers, page container, and the home/archive
+// card grid. Hand-rolled CSS Grid + Flexbox - no framework.
+
+// Min-width media query helper.
+@mixin from($bp) {
+	@media (min-width: $bp) {
+		@content;
+	}
+}
+
+.container {
+	width: 100%;
+	max-width: $wide-measure;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: $gap;
+	padding-right: $gap;
+	box-sizing: border-box;
+}
+
+// Readable content column, capped per spec.
+.measure {
+	max-width: $content-measure;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+// The varied-box card grid. Auto-flow dense lets cards of different spans
+// tile without leaving gaps, giving the home page its irregular rhythm.
+.card-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: $gap;
+	grid-auto-flow: dense;
+
+	@include from($bp-md) {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	@include from($bp-lg) {
+		grid-template-columns: repeat(6, 1fr);
+		gap: 2rem;
+	}
+}
+
+// Card span modifiers (only meaningful at the 6-column desktop grid).
+@include from($bp-lg) {
+	.span-2 { grid-column: span 2; }
+	.span-3 { grid-column: span 3; }
+	.span-4 { grid-column: span 4; }
+	.span-6 { grid-column: span 6; }
+	.row-2  { grid-row: span 2; }
+}
+
+// Featured strip at the top of the home page.
+.featured-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: $gap;
+	margin-bottom: 2.5rem;
+
+	@include from($bp-md) {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	@include from($bp-lg) {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}

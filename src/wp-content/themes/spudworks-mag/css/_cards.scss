@@ -1,0 +1,299 @@
+// Home / archive card system. One base card with variant modifiers:
+//   --under    image on top, text left underneath (default workhorse)
+//   --overlay  centered text over the image behind a scrim
+//   --featured larger strip card, text over the lower image
+//   --pinned   full-width standalone hero
+
+// --- Home masthead ---------------------------------------------------------
+.home-masthead {
+	// Vertical padding only - keep the container's horizontal inset intact.
+	padding-top: 2.5rem;
+	padding-bottom: 0.5rem;
+}
+
+.home-masthead__title {
+	font-size: clamp(2.6rem, 8vw, 5rem);
+	font-weight: $weight-black;
+	letter-spacing: -0.02em;
+	line-height: 0.95;
+	margin: 0;
+	color: #f5f1e8;
+}
+
+.home-masthead__tagline {
+	font-family: $sans;
+	font-size: 0.95rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: $paper-dim;
+	margin: 0.6rem 0 0;
+}
+
+.home-pinned,
+.home-featured {
+	margin-bottom: 2.5rem;
+}
+
+.home-grid {
+	margin-bottom: 2rem;
+}
+
+// --- Shared term chips -----------------------------------------------------
+.term-chips {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	margin: 0 0 0.6rem;
+	padding: 0;
+	position: relative;
+	z-index: 2; // stay clickable above a stretched title link
+
+	li a {
+		display: inline-block;
+		font-family: $sans;
+		font-size: 0.68rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: $hazard-yellow;
+		border: 0;
+		padding: 0.15rem 0.5rem;
+		background: rgba($hazard-black, 0.55);
+		border-left: 2px solid $hazard-yellow;
+
+		&:hover,
+		&:focus {
+			color: $hazard-black;
+			background: $hazard-yellow;
+		}
+	}
+}
+
+// --- Card base -------------------------------------------------------------
+.card {
+	position: relative;
+	background: $ink-panel;
+	border: 1px solid $ink-rule;
+	border-radius: 3px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.card__media {
+	display: block;
+	overflow: hidden;
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.4s ease;
+	}
+}
+
+.card:hover .card__media img {
+	transform: scale(1.04);
+}
+
+.card__body {
+	padding: 1.1rem 1.2rem 1.3rem;
+}
+
+.card-title {
+	margin: 0 0 0.3rem;
+	font-size: 1.3rem;
+	line-height: 1.14;
+
+	a {
+		color: inherit;
+		border: 0;
+
+		&:hover,
+		&:focus {
+			color: $hazard-yellow;
+		}
+	}
+}
+
+.card-subhead {
+	font-family: $serif;
+	font-style: italic;
+	font-size: 1rem;
+	color: $paper-dim;
+	margin: 0 0 0.5rem;
+}
+
+.card-byline {
+	font-family: $sans;
+	font-size: 0.78rem;
+	letter-spacing: 0.03em;
+	color: $paper-dim;
+	margin: 0.4rem 0 0;
+
+	&__author {
+		color: $paper;
+		font-weight: $weight-medium;
+	}
+
+	&__sep {
+		margin: 0 0.4rem;
+	}
+}
+
+.card-flag {
+	display: inline-block;
+	font-family: $sans;
+	font-size: 0.68rem;
+	font-weight: $weight-bold;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: $hazard-black;
+	background: $hazard-yellow;
+	padding: 0.2rem 0.6rem;
+	margin-bottom: 0.8rem;
+}
+
+// Stretched link: makes the title anchor cover the whole card.
+.stretched-link::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+}
+
+// --- Variant: image over text (overlay / featured / pinned) ----------------
+// These share an absolutely-positioned media layer + a darkening scrim.
+%media-overlay {
+	justify-content: flex-end;
+
+	.card__media {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+	}
+
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		background: linear-gradient(180deg, rgba(8, 9, 11, 0.15) 0%, rgba(8, 9, 11, 0.55) 55%, rgba(8, 9, 11, 0.9) 100%);
+	}
+
+	.card__body {
+		position: relative;
+		z-index: 2;
+	}
+
+	.card-title a {
+		color: #f6f1e6;
+	}
+}
+
+.card--overlay {
+	@extend %media-overlay;
+	min-height: 260px;
+}
+
+.card--overlay.row-2 {
+	min-height: 380px;
+}
+
+.card--featured {
+	@extend %media-overlay;
+	min-height: 340px;
+
+	.card-title {
+		font-size: clamp(1.5rem, 2.4vw, 2rem);
+	}
+}
+
+// Centered text treatment (overlay + pinned).
+.card__body--centered {
+	text-align: center;
+	width: 100%;
+
+	.term-chips {
+		justify-content: center;
+	}
+
+	// Fill the body so centered text wraps within the card rather than letting
+	// a long subhead's max-width push the flex item past the viewport.
+	.card-meta {
+		width: 100%;
+	}
+
+	.card-flag {
+		max-width: 100%;
+	}
+
+	// Keep width-constrained headline + subhead blocks centered (otherwise a
+	// max-width block hugs the left edge and only the text inside looks off).
+	.card-title,
+	.card-subhead {
+		margin-left: auto;
+		margin-right: auto;
+	}
+}
+
+.card--overlay .card__body--centered {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+	background: rgba(8, 9, 11, 0.32);
+}
+
+// No featured image: the hazard motif always stands in for the missing image.
+// A dark vignette is layered over it so headline text stays legible.
+.card--overlay.card--noimage,
+.card--featured.card--noimage,
+.card--pinned.card--noimage {
+	@include hazard-panel(34px);
+
+	&::before {
+		background: radial-gradient(120% 120% at 50% 100%, rgba(8, 9, 11, 0.85) 0%, rgba(8, 9, 11, 0.55) 55%, rgba(8, 9, 11, 0.4) 100%);
+	}
+}
+
+// --- Variant: pinned hero --------------------------------------------------
+.card--pinned {
+	@extend %media-overlay;
+	min-height: 60vh;
+	border: 0;
+	border-radius: 4px;
+
+	.card__body--centered {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		height: 100%;
+		padding: 2rem;
+	}
+
+	.card-title {
+		font-size: clamp(2rem, 6vw, 4rem);
+		max-width: 16ch;
+	}
+
+	.card-subhead {
+		font-size: 1.2rem;
+		max-width: 48ch;
+	}
+}
+
+// --- Variant: under (default) ----------------------------------------------
+.card--under {
+	.card__media {
+		aspect-ratio: 16 / 10;
+	}
+}
+
+// No featured image on an under card: fill the media slot with the hazard motif.
+.card__media--hazard {
+	@include hazard-panel(26px);
+}

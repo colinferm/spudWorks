@@ -1,0 +1,15 @@
+{
+	"name": "spudworks/spudworks-mag",
+	"description": "spudWorks Magazine WordPress theme.",
+	"type": "wordpress-theme",
+	"license": "proprietary",
+	"authors": [
+		{ "name": "Colin Andrew Ferm" }
+	],
+	"require": {
+		"php": ">=8.0"
+	},
+	"config": {
+		"vendor-dir": "lib"
+	}
+}

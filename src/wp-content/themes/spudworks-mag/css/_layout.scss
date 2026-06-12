@@ -1,0 +1,309 @@
+// Site chrome: the floating/sticky header + nav, and the footer.
+
+.site-main {
+	padding: 2rem 0 3rem;
+}
+
+// --- Header / floating nav -------------------------------------------------
+.site-header {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: rgba($ink, 0.82);
+	backdrop-filter: saturate(160%) blur(10px);
+	border-bottom: 1px solid $ink-rule;
+}
+
+.site-header__bar {
+	max-width: $wide-measure;
+	margin: 0 auto;
+	padding: 0.75rem $gap;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.site-header__brand {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.05;
+	// Push the nav, search box, and toggle to the far right.
+	margin-right: auto;
+}
+
+.site-title {
+	font-family: $serif;
+	font-weight: $weight-black;
+	font-size: clamp(1.4rem, 3vw, 1.9rem);
+	letter-spacing: -0.01em;
+	color: #f5f1e8;
+	border: 0;
+
+	&:hover,
+	&:focus {
+		color: $hazard-yellow;
+	}
+}
+
+.site-tagline {
+	font-family: $sans;
+	font-size: 0.72rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: $paper-dim;
+	margin-top: 0.2rem;
+}
+
+// Nav: a slide-down panel on small screens, an inline row on wide screens.
+.primary-nav {
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	background: $ink-panel;
+	border-bottom: 1px solid $ink-rule;
+	padding: 0.5rem $gap 1rem;
+
+	&.is-open {
+		display: block;
+	}
+
+	@include from($bp-lg) {
+		display: block;
+		position: static;
+		background: transparent;
+		border: 0;
+		padding: 0;
+		width: auto;
+	}
+}
+
+.primary-nav__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+
+	@include from($bp-lg) {
+		flex-direction: row;
+		align-items: center;
+		gap: 1.6rem;
+	}
+
+	a {
+		display: block;
+		padding: 0.5rem 0;
+		font-family: $sans;
+		font-weight: $weight-medium;
+		font-size: 0.95rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: $paper;
+		border: 0;
+		border-bottom: 2px solid transparent;
+
+		&:hover,
+		&:focus {
+			color: $hazard-yellow;
+			border-bottom-color: $hazard-yellow;
+		}
+	}
+
+	.current-menu-item > a {
+		color: $hazard-yellow;
+	}
+
+	// Simple second-level dropdown for wide screens.
+	.sub-menu {
+		list-style: none;
+		margin: 0;
+		padding: 0 0 0 0.75rem;
+
+		@include from($bp-lg) {
+			padding: 0;
+		}
+	}
+}
+
+// Hamburger toggle (hidden on wide screens).
+.nav-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	background: transparent;
+	border: 1px solid $ink-rule;
+	border-radius: 4px;
+	cursor: pointer;
+
+	@include from($bp-lg) {
+		display: none;
+	}
+}
+
+.nav-toggle__bars,
+.nav-toggle__bars::before,
+.nav-toggle__bars::after {
+	display: block;
+	width: 20px;
+	height: 2px;
+	background: $paper;
+	position: relative;
+	transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-toggle__bars::before,
+.nav-toggle__bars::after {
+	content: '';
+	position: absolute;
+	left: 0;
+}
+
+.nav-toggle__bars::before { top: -6px; }
+.nav-toggle__bars::after  { top: 6px; }
+
+.nav-toggle[aria-expanded="true"] .nav-toggle__bars {
+	background: transparent;
+
+	&::before { transform: translateY(6px) rotate(45deg); }
+	&::after  { transform: translateY(-6px) rotate(-45deg); }
+}
+
+// --- Archive header --------------------------------------------------------
+.archive-header {
+	padding-top: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.archive-title {
+	margin-bottom: 0.25rem;
+}
+
+.archive-description {
+	color: $paper-dim;
+	max-width: $content-measure;
+}
+
+// --- Footer ----------------------------------------------------------------
+.site-footer {
+	margin-top: 3rem;
+}
+
+.site-footer__inner {
+	max-width: $wide-measure;
+	margin: 0 auto;
+	padding: 0 $gap 3rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+// Footer top row: menu on the left, search box pinned to the far right.
+.site-footer__top {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 1rem;
+	width: 100%;
+}
+
+.footer-nav {
+	margin-right: auto;
+}
+
+.footer-nav__list {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.2rem;
+	margin: 0;
+	padding: 0;
+
+	a {
+		color: $paper-dim;
+		border: 0;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+
+		&:hover { color: $hazard-yellow; }
+	}
+}
+
+.site-footer__copy {
+	color: $paper-dim;
+	font-size: 0.85rem;
+	margin: 0;
+	text-align: center;
+}
+
+.no-results {
+	color: $paper-dim;
+	text-align: center;
+	padding: 3rem 0;
+}
+
+// --- Header / footer search box --------------------------------------------
+// The field carries the same dark hazard-stripe motif as the text-on-top
+// no-image cards: muted stripes under a flat dark layer that keeps typed text
+// legible. Square corners + an inset shadow make it sit "in" the page.
+.search-box {
+	position: relative;
+	width: 200px;
+	max-width: 100%;
+	background-color: $hazard-black;
+	background-image:
+		linear-gradient(rgba(8, 9, 11, 0.62), rgba(8, 9, 11, 0.62)),
+		repeating-linear-gradient(
+			-45deg,
+			rgba($hazard-black, 0.96) 0,
+			rgba($hazard-black, 0.96) 17px,
+			rgba(125, 98, 8, 0.96) 17px,
+			rgba(125, 98, 8, 0.96) 34px
+		);
+	border: 1px solid rgba(0, 0, 0, 0.65);
+	border-radius: 0;
+	box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
+
+	&:focus-within {
+		border-color: rgba($hazard-yellow, 0.5);
+	}
+}
+
+.search-box__field {
+	width: 100%;
+	background: transparent;
+	border: 0;
+	outline: none;
+	color: $paper;
+	font-family: $sans;
+	font-size: 0.9rem;
+	padding: 0.5rem 0.7rem;
+
+	// Placeholder uses the card-date treatment.
+	&::placeholder {
+		font-family: $sans;
+		font-size: 0.78rem;
+		letter-spacing: 0.03em;
+		color: $paper-dim;
+		opacity: 1;
+	}
+}
+
+.search-box--header {
+	width: 190px;
+
+	// On small phones the hamburger needs the room; the footer search covers it.
+	@media (max-width: 767px) {
+		display: none;
+	}
+}
+
+.search-box--footer {
+	width: 220px;
+	margin-left: auto; // pin to the far right even without a footer menu
+}

@@ -1,0 +1,14 @@
+// spudWorks Magazine - main stylesheet.
+// Authored in SCSS; compiled to spudworks-mag.css by the project's Grunt task.
+// Partials are imported in dependency order (tokens first).
+
+@import 'variables';
+@import 'fonts';
+@import 'grid';
+@import 'typography';
+@import 'hazard';
+@import 'layout';
+@import 'cards';
+@import 'single';
+@import 'lightbox';
+@import 'archive';

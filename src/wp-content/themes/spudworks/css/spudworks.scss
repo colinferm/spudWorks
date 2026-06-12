@@ -1,0 +1,144 @@
+$spudworks-red: #8D0900;
+$spudworks-tan: #FFBF7F;
+$spudworks-orange: #ff7f00;
+html {
+	body {
+		background-color: $spudworks-red;
+
+		.title-bar {
+			background-color: $spudworks-orange;
+			border-bottom: 3px solid #000;
+
+			.title-bar-right {
+				img {
+					height: 50px;
+				}
+			}
+		}
+
+		.left-nav {
+			background-color: $spudworks-red;
+			border-right: 3px solid #000;
+			min-height: 800px;
+
+			.front-door {
+				width: 100%;
+			}
+
+			ul.site-categories {
+				list-style: none;
+				margin-left: 10px;
+				margin-top: 10px;
+				
+				li {
+					margin-top: 20px;
+					font-weight: bold;
+
+					&.meta-links {
+						a {
+							letter-spacing: 0;
+
+						}
+					}
+
+					a {
+						&:hover {
+							text-decoration: underline;
+						}
+						color: $spudworks-orange;
+						text-transform: uppercase;
+						letter-spacing: 1px;
+					}
+				}
+
+				ul.category-stories {
+					li {
+						margin-top: 0px;
+						a {
+							font-size: 12px;
+							font-weight: bold;
+							letter-spacing: normal;
+						}
+					}
+				}
+			}
+		}
+
+		.main-content-well {
+			background-color: $spudworks-tan;
+			border-bottom: 3px solid #000;
+
+			.featured-image {
+				max-height: 300px;
+				overflow: hidden;
+
+				img {
+					width: 100%;
+					height: auto;
+				}
+			}
+
+			.article-content {
+				padding: 10px 20px 0 20px
+			}
+
+			h1 {
+				text-transform: uppercase;
+				font-size: 20px;
+				letter-spacing: 0.5px;
+				font-weight: bold;
+				color: $spudworks-red;
+				
+				a {
+					&:hover {
+						text-decoration: underline;
+					}
+					color: $spudworks-red;
+				}
+			}
+
+			.publish-date {
+				display: block;
+				margin-bottom: 5px;
+				font-size: 16px;
+				font-weight: bold;
+				letter-spacing: 1px;
+			}
+
+			a {
+				&:hover {
+					text-decoration: underline;
+				}
+				color: $spudworks-red;
+			}
+			
+			#gallery-1.gallery {
+				.gallery-item {
+					border: none;
+
+					img {
+						border: 1px solid #000;
+					}
+				}
+			}
+
+			.pagination {
+				a {
+					&:hover {
+						background: transparent;
+						color: $spudworks-orange;
+						text-decoration: underline;
+					}
+					color: $spudworks-red;
+					font-weight: bold;
+				}
+			}
+		}
+
+		.footer-content {
+			color: $spudworks-tan;
+			margin: 20px 0;
+			text-align: center;
+		}
+	}
+}

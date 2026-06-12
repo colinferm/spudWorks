@@ -1,0 +1,16 @@
+/*
+Theme Name: spudWorks Magazine
+Theme URI: https://www.spudworks.com/
+Author: Colin Andrew Ferm
+Author URI: https://www.spudworks.com/
+Description: A dark, editorial web magazine theme for fiction, miniature painting, and Necromunda/40k game recaps. Custom responsive layout, self-hosted Space Grotesk + Fraunces typography, and a restrained black/yellow hazard-stripe motif.
+Version: 1.0.1
+Requires at least: 6.0
+Requires PHP: 8.0
+License: Copyright Colin Andrew Ferm
+Text Domain: spudworks-mag
+Tags: magazine, dark, editorial, responsive
+
+This file is required by WordPress for theme metadata. The compiled
+stylesheet lives at css/spudworks-mag.css and is enqueued in functions.php.
+*/
