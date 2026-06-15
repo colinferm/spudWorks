@@ -144,6 +144,22 @@ function spudmagImageAlt($attr, $attachment, $size) {
 add_filter('wp_get_attachment_image_attributes', 'spudmagImageAlt', 10, 3);
 
 /**
+ * Give gallery thumbnails a correct `sizes` value. The gallery grid stretches
+ * the 150px thumbnail crop to fill its (larger) cell, but WordPress sets
+ * sizes="...150px" on eager-loaded images, so on standard-density screens the
+ * browser fetches the tiny crop and upscales it (blurry) while lazy images get
+ * sizes="auto" and pick the sharp larger source. Setting sizes here makes the
+ * browser choose the larger srcset candidate for every thumbnail, lazy or not.
+ */
+function spudmagGalleryThumbSizes($attr, $attachment, $size) {
+	if ($size === 'thumbnail' && !empty($attr['srcset'])) {
+		$attr['sizes'] = '(max-width: 767px) 45vw, 30vw';
+	}
+	return $attr;
+}
+add_filter('wp_get_attachment_image_attributes', 'spudmagGalleryThumbSizes', 10, 3);
+
+/**
  * Enqueue the compiled stylesheet and front-end scripts.
  */
 function spudmagAssets() {

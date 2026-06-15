@@ -52,6 +52,14 @@
 		return img.currentSrc || img.src;
 	}
 
+	function originalSrcFor(url) {
+		// WordPress derivatives are named "name-WxH.ext"; drop that suffix to get
+		// the uncropped original (e.g. a square 700x700 gallery crop -> the full
+		// 1500x1125 upload). If the original is missing we fall back at render
+		// time, so this is safe to attempt.
+		return url.replace(/-\d+x\d+(\.[a-z0-9]+)(\?.*)?$/i, '$1$2');
+	}
+
 	function buildOverlay() {
 		var overlay = document.createElement('div');
 		overlay.className = 'lightbox';
@@ -98,7 +106,12 @@
 					// Intercept the media-file link so it opens in the lightbox.
 					link.classList.add('lightbox-linked');
 				}
-				return { src: fullSrcFor(img), alt: img.getAttribute('alt') || '' };
+				var best = fullSrcFor(img);
+				return {
+					src: originalSrcFor(best),
+					fallback: best,
+					alt: img.getAttribute('alt') || ''
+				};
 			});
 			groups.push(sources);
 		});
@@ -116,6 +129,13 @@
 
 		function render() {
 			var item = groups[current.group][current.index];
+			// If the derived original is missing, fall back to the known-good size.
+			imgEl.onerror = function () {
+				imgEl.onerror = null;
+				if (item.fallback && imgEl.getAttribute('src') !== item.fallback) {
+					imgEl.src = item.fallback;
+				}
+			};
 			imgEl.src = item.src;
 			imgEl.alt = item.alt;
 			captionEl.textContent = item.alt;
