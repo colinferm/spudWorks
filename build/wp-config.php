@@ -84,7 +84,7 @@ define('WP_DEBUG', false);
 
 define('WP_MEMORY_LIMIT', '1536M');
 define('WP_ALLOW_MULTISITE', true);
-define('MULTISITE', false);
+define('MULTISITE', true);
 define('SUBDOMAIN_INSTALL', true);
 define('DOMAIN_CURRENT_SITE', 'spudworks.localhost:8080');
 define('PATH_CURRENT_SITE', '/');

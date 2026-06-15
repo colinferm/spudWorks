@@ -7,13 +7,9 @@ RUN touch /root/.vimrc && echo 'set nocompatible' >> /root/.vimrc
 # basic environment install.
 RUN apt-get update --allow-releaseinfo-change -qq \
   && apt-get install -y default-mysql-client --no-install-recommends \
-  && apt-get install -y vim-tiny \
+  && apt-get install -y vim-tiny unzip \
   && apt-get install -y sudo ca-certificates curl gnupg \
   && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libpng-dev libxml2-dev libzip-dev
-
-# get ruby & SASS
-RUN apt-get install -y ruby-full \
-  && gem install sass
 
 # Install most PHP dependencies
 RUN docker-php-ext-install mysqli pdo pdo_mysql soap zip \
@@ -55,7 +51,7 @@ RUN printf "[xdebug] \
 
 RUN printf "error_reporting=E_ALL" > /usr/local/etc/php/conf.d/error_reporting.ini
 
-# Set up Grunt.js to process JS/CSS/SASS
+# Set up Gulp to process SCSS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
   && apt-get install -y nodejs \
   && node --version \
@@ -64,31 +60,27 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 RUN mkdir -p /usr/src/spudworks
 COPY ./build/package.json /usr/src/spudworks
 COPY ./build/local.json /usr/src/spudworks
-COPY ./build/Gruntfile.js /usr/src/spudworks
+COPY ./build/gulpfile.js /usr/src/spudworks
 COPY ./build/wp-config.php /var/www/html/
 COPY ./build/htaccess /var/www/html/.htaccess
 WORKDIR /usr/src/spudworks
 
-RUN npm install grunt
-RUN npm install grunt-contrib-concat grunt-contrib-copy grunt-contrib-jshint grunt-contrib-qunit \
-  grunt-contrib-sass grunt-contrib-uglify  grunt-contrib-watch grunt-newer grunt-replace \
-  grunt-contrib-clean grunt-zip
-RUN npm install -g grunt-cli
-RUN npm install gulp gulp-watch gulp-sass gulp-sourcemaps gulp-csso node-sass sass
+RUN npm install
+RUN npm install -g gulp-cli
 
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
   && chmod +x wp-cli.phar \
   && mv wp-cli.phar /usr/local/bin/wp
 
-ENV WORDPRESS_VERSION="6.8.1"
+ENV WORDPRESS_VERSION="7.0"
 RUN curl -fsSLO --compressed "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz" \
   && tar -xzf "wordpress-${WORDPRESS_VERSION}.tar.gz" -C /var/www/html --strip-components=1 --no-same-owner \
-  && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/classic-editor.1.6.7.zip" \
-  && unzip classic-editor.1.6.7.zip -d /var/www/html/wp-content/plugins \
+  && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/classic-editor.1.7.0.zip" \
+  && unzip classic-editor.1.7.0.zip -d /var/www/html/wp-content/plugins \
   && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/classic-widgets.0.3.zip" \
   && unzip classic-widgets.0.3.zip -d /var/www/html/wp-content/plugins \
-  && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/multiple-post-thumbnails.1.7.zip" \
-  && unzip multiple-post-thumbnails.1.7.zip -d /var/www/html/wp-content/plugins \
+  # && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/multiple-post-thumbnails.1.7.zip" \
+  # && unzip multiple-post-thumbnails.1.7.zip -d /var/www/html/wp-content/plugins \
   && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/regenerate-thumbnails.3.1.6.zip" \
   && unzip regenerate-thumbnails.3.1.6.zip -d /var/www/html/wp-content/plugins \
   && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/redis-cache.2.5.4.zip" \
@@ -111,5 +103,5 @@ ENTRYPOINT ["/bin/bash", "-c", "bash \
   && sudo chown -R www-user:www-data /var/www/html \
   && sudo chown -R www-user:www-data /usr/src/spudworks \
   && cd /usr/src/spudworks \
-  && grunt process-sass >> /dev/stdout && \
-  eval 'grunt watch >> /dev/stdout &'; sleep 5; apachectl stop; apachectl -D FOREGROUND"]
+  && gulp build >> /dev/stdout && \
+  eval 'gulp watch >> /dev/stdout &'; sleep 5; apachectl stop; apachectl -D FOREGROUND"]

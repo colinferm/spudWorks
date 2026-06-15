@@ -1,6 +1,9 @@
 // Single-article layout: hero, header, readable content column, the three
 // template variants, pagination, author box, and related stories.
 
+@use 'variables' as *;
+@use 'grid' as *;
+
 .article {
 	padding-bottom: 2rem;
 }

@@ -1,5 +1,7 @@
 // Archive / search / 404 chrome, plus the posts pagination shared by them.
 
+@use 'variables' as *;
+
 .archive-kicker {
 	font-family: $sans;
 	font-size: 0.78rem;

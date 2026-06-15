@@ -1,4 +1,8 @@
 // Home / archive card system. One base card with variant modifiers:
+
+@use 'variables' as *;
+@use 'grid' as *;
+@use 'hazard' as *;
 //   --under    image on top, text left underneath (default workhorse)
 //   --overlay  centered text over the image behind a scrim
 //   --featured larger strip card, text over the lower image

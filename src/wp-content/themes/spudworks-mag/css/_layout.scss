@@ -1,5 +1,8 @@
 // Site chrome: the floating/sticky header + nav, and the footer.
 
+@use 'variables' as *;
+@use 'grid' as *;
+
 .site-main {
 	padding: 2rem 0 3rem;
 }

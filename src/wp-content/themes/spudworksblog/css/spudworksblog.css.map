@@ -1,7 +1,1 @@
-{
-"version": 3,
-"mappings": "AAME,iBAAQ;EACP,gBAAgB,EAAE,kBAAyB;;AAG5C,oBAAW;EACV,gBAAgB,EAAE,kBAA4B;;AAG/C,iBAAQ;EACP,gBAAgB,EAAE,kBAAyB;;AAM3C,0BAAI;EACH,UAAU,EAAE,IAAI",
-"sources": ["spudworksblog.scss"],
-"names": [],
-"file": "spudworksblog.css"
-}
+{"version":3,"sources":["spudworksblog/css/spudworksblog.scss"],"names":[],"mappings":"AAME;EACC;;AAGD;EACC;;AAGD;EACC;;AAMA;EACC","file":"spudworksblog.css","sourcesContent":["$spudworks-red: #8D0900;\n$spudworks-tan: #FFBF7F;\n$spudworks-orange: #ff7f00;\n\nhtml {\n\tbody {\n\t\t.bg-red {\n\t\t\tbackground-color: $spudworks-red !important;\n\t\t}\n\n\t\t.bg-orange {\n\t\t\tbackground-color: $spudworks-orange !important;\n\t\t}\n\n\t\t.bg-tan {\n\t\t\tbackground-color: $spudworks-tan !important;\n\t\t}\n\t}\n\n\tnav {\n\t\t.navbar-brand {\n\t\t\timg {\n\t\t\t\tmax-height: 35px;\n\t\t\t}\n\t\t}\n\t}\n}"]}

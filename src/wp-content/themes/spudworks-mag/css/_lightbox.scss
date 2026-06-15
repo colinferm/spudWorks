@@ -1,5 +1,7 @@
 // Image lightbox overlay. Hidden until JS adds .is-open.
 
+@use 'variables' as *;
+
 body.lightbox-open {
 	overflow: hidden;
 }

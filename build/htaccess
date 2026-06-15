@@ -5,8 +5,13 @@ php_value memory_limit 1024M
 # BEGIN WordPress
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteBase /
+
+RewriteRule ^wp-content/uploads/sites/2/(.*)$ https://spudworks.com/wp-content/uploads/sites/2/$1 [R=301,L]
+RewriteRule ^wp-content/uploads/(.*)$ https://spudworks.com/wp-content/uploads/$1 [R=301,L]
+
+
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteRule ^index\.php$ - [L]
 
 # add a trailing slash to /wp-admin

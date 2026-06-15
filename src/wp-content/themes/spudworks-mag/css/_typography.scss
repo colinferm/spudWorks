@@ -1,6 +1,8 @@
 // Base typography. Sans-serif (Space Grotesk) for everything by default;
 // serif (Fraunces) reserved for headlines, pullquotes, and special content.
 
+@use 'variables' as *;
+
 *,
 *::before,
 *::after {

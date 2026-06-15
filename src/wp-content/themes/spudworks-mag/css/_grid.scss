@@ -1,6 +1,8 @@
 // Layout primitives: responsive helpers, page container, and the home/archive
 // card grid. Hand-rolled CSS Grid + Flexbox - no framework.
 
+@use 'variables' as *;
+
 // Min-width media query helper.
 @mixin from($bp) {
 	@media (min-width: $bp) {
