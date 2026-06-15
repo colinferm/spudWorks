@@ -7,6 +7,6 @@ if (!is_active_sidebar('showcase-sidebar')) {
 	return;
 }
 ?>
-<aside class="showcase-sidebar widget-area" aria-label="<?php esc_attr_e('Showcase sidebar', 'spudworks-mag'); ?>">
+<aside class="showcase-sidebar widget-area" data-lightbox="sidebar" aria-label="<?php esc_attr_e('Showcase sidebar', 'spudworks-mag'); ?>">
 	<?php dynamic_sidebar('showcase-sidebar'); ?>
 </aside>

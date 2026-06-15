@@ -12,15 +12,42 @@
 
 	var IMAGE_HREF = /\.(jpe?g|png|gif|webp|avif|bmp|svg)(\?.*)?$/i;
 
+	function largestSrcsetUrl(img) {
+		// Pick the widest candidate declared in srcset. Galleries link to the
+		// attachment page (not a file), so without this the lightbox would fall
+		// back to img.currentSrc - the small thumbnail the browser chose for the
+		// grid - instead of the full-size image.
+		var srcset = img.getAttribute('srcset') || '';
+		var best = '';
+		var bestWidth = 0;
+		srcset.split(',').forEach(function (candidate) {
+			var parts = candidate.trim().split(/\s+/);
+			if (!parts[0]) {
+				return;
+			}
+			var width = (parts[1] && /^\d+w$/.test(parts[1])) ? parseInt(parts[1], 10) : 0;
+			if (width > bestWidth) {
+				bestWidth = width;
+				best = parts[0];
+			}
+		});
+		return bestWidth > 0 ? best : '';
+	}
+
 	function fullSrcFor(img) {
-		// Prefer an explicit link to a media file, then a data-full hint,
-		// then the largest source the browser actually chose.
+		// Prefer an explicit link to a media file, then a data-full hint, then the
+		// largest source in the srcset, and finally whatever the browser is
+		// currently showing.
 		var link = img.closest('a');
 		if (link && IMAGE_HREF.test(link.getAttribute('href') || '')) {
 			return link.getAttribute('href');
 		}
 		if (img.dataset && img.dataset.full) {
 			return img.dataset.full;
+		}
+		var largest = largestSrcsetUrl(img);
+		if (largest) {
+			return largest;
 		}
 		return img.currentSrc || img.src;
 	}
@@ -151,6 +178,27 @@
 				step(1);
 			}
 		});
+
+		// Touch swipe (mobile): a mostly-horizontal drag past the threshold steps
+		// through the group. Swipe left advances, swipe right goes back.
+		var SWIPE_THRESHOLD = 40;
+		var touchStartX = 0;
+		var touchStartY = 0;
+
+		overlay.addEventListener('touchstart', function (event) {
+			var touch = event.changedTouches[0];
+			touchStartX = touch.clientX;
+			touchStartY = touch.clientY;
+		}, { passive: true });
+
+		overlay.addEventListener('touchend', function (event) {
+			var touch = event.changedTouches[0];
+			var dx = touch.clientX - touchStartX;
+			var dy = touch.clientY - touchStartY;
+			if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+				step(dx < 0 ? 1 : -1);
+			}
+		}, { passive: true });
 	}
 
 	if (document.readyState === 'loading') {

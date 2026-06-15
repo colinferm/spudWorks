@@ -6,6 +6,11 @@ body.lightbox-open {
 	overflow: hidden;
 }
 
+// Any lightbox-enabled image (content well or sidebar) invites a click.
+.lightbox-trigger {
+	cursor: zoom-in;
+}
+
 .lightbox {
 	position: fixed;
 	inset: 0;
@@ -45,6 +50,8 @@ body.lightbox-open {
 	object-fit: contain;
 	border-radius: 3px;
 	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+	// Allow vertical scroll/dismiss intent; horizontal swipes drive prev/next.
+	touch-action: pan-y;
 }
 
 .lightbox__caption {

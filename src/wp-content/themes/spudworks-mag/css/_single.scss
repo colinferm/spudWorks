@@ -109,6 +109,42 @@
 		border: 0;
 		display: inline-block;
 	}
+
+	// Standard WordPress image alignment (bare <img> or figure / wp-block-image
+	// wrappers). Without these a not-full-width image just sits flush-left.
+	img.aligncenter,
+	figure.aligncenter,
+	.wp-block-image.aligncenter {
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	figure.aligncenter,
+	.wp-block-image.aligncenter {
+		width: fit-content;
+		max-width: 100%;
+		text-align: center; // centres the caption under the image
+	}
+
+	.alignleft {
+		float: left;
+		max-width: 50%;
+		margin: 0.3rem 1.6rem 1rem 0;
+	}
+
+	.alignright {
+		float: right;
+		max-width: 50%;
+		margin: 0.3rem 0 1rem 1.6rem;
+	}
+
+	// Contain trailing floats so they don't bleed past the content.
+	&::after {
+		content: "";
+		display: block;
+		clear: both;
+	}
 }
 
 // Classic [gallery] shortcode: a responsive thumbnail grid. The number in
@@ -208,16 +244,14 @@
 		border-bottom: 1px solid $ink-rule;
 	}
 
+	// Headers match the footer columns: editorial serif with a hairline.
 	.widget-title {
-		font-family: $sans;
-		font-size: 0.85rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: $hazard-yellow;
-		margin-bottom: 0.8rem;
+		@include widget-title;
 	}
 
-	ul {
+	// Plain widget lists (Recent Posts, Archives, ...) get hairline rows. The
+	// :not() keeps a Featured Post card's .term-chips from inheriting them.
+	ul:not(.term-chips) {
 		list-style: none;
 		padding: 0;
 		margin: 0;
@@ -225,6 +259,32 @@
 		li {
 			padding: 0.35rem 0;
 			border-bottom: 1px solid rgba($ink-rule, 0.5);
+		}
+	}
+
+	// Featured Post widget: same overlay card, a touch shorter in the column.
+	.card--featured {
+		min-height: 240px;
+	}
+
+	// Tag cloud: left at its default look until hovered, then each tag animates
+	// into the post tag-chip treatment (left border + inverse colours). Space is
+	// reserved up front so the hover state doesn't reflow its neighbours.
+	.tagcloud a.tag-cloud-link,
+	.wp-block-tag-cloud a.tag-cloud-link {
+		display: inline-block;
+		border: 0;
+		border-left: 2px solid transparent;
+		padding: 0.1rem 0.45rem;
+		color: $hazard-yellow;
+		background: transparent;
+		transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+
+		&:hover,
+		&:focus {
+			border-left-color: $hazard-yellow;
+			background: $hazard-yellow;
+			color: $hazard-black;
 		}
 	}
 }

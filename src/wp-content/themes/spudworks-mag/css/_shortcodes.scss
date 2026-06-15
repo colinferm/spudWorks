@@ -1,0 +1,141 @@
+// Editorial shortcodes: the [multipart] navigation box and the [author-note]
+// aside. Both span the content column and lean on the serif/hazard palette.
+
+@use 'variables' as *;
+@use 'grid' as *;
+
+// --- [multipart] -----------------------------------------------------------
+.multipart {
+	margin: 2.5rem 0;
+	padding: 1.4rem 1.5rem;
+	background: $ink-panel;
+	border: 1px solid $ink-rule;
+	border-top: 3px solid $hazard-yellow;
+	border-radius: 3px;
+
+	&__intro {
+		font-family: $serif;
+		font-style: italic;
+		color: $paper-dim;
+		margin-bottom: 1.1rem;
+
+		p {
+			margin: 0 0 0.6em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	&__nav {
+		display: flex;
+		align-items: stretch;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	&__link {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		border: 0;
+		color: $paper;
+		max-width: 48%;
+
+		&:hover,
+		&:focus {
+			color: $hazard-yellow;
+		}
+
+		&--next {
+			margin-left: auto;
+			text-align: right;
+		}
+	}
+
+	&__arrow {
+		flex: 0 0 auto;
+		color: $hazard-yellow;
+		transition: transform 0.15s ease;
+	}
+
+	&__link--prev:hover &__arrow { transform: translateX(-3px); }
+	&__link--next:hover &__arrow { transform: translateX(3px); }
+
+	&__text {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.2;
+	}
+
+	&__kicker {
+		font-family: $sans;
+		font-size: 0.66rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: $paper-dim;
+	}
+
+	&__title {
+		font-family: $serif;
+		font-weight: $weight-bold;
+		font-size: 1.15rem;
+		margin-top: 0.15rem;
+	}
+
+	// Stack on the narrowest screens so neither side gets crushed.
+	@media (max-width: $bp-sm) {
+		&__nav {
+			flex-direction: column;
+		}
+
+		&__link,
+		&__link--next {
+			max-width: 100%;
+			margin-left: 0;
+			text-align: left;
+		}
+
+		&__link--next {
+			flex-direction: row-reverse;
+			justify-content: flex-end;
+		}
+	}
+}
+
+// --- [author-note] ---------------------------------------------------------
+.author-note {
+	margin: 2.5rem 0;
+	padding: 1.3rem 1.5rem;
+	background: $ink-panel;
+	border-left: 4px solid $hazard-yellow;
+	border-radius: 0 3px 3px 0;
+
+	&__header {
+		font-family: $sans;
+		font-size: 0.74rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: $hazard-yellow;
+		margin: 0 0 0.7rem;
+	}
+
+	&__body {
+		font-family: $serif;
+		font-style: italic;
+		font-size: 1.1rem;
+		line-height: 1.6;
+		color: #f6f1e6;
+
+		p {
+			margin: 0 0 0.8em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+}

@@ -1,6 +1,7 @@
 <?php
 /**
- * Theme footer: closes the main region, renders the footer menu + colophon.
+ * Theme footer: closes the main region, renders the three widget columns
+ * and the colophon.
  */
 ?>
 		</main><!-- #main -->
@@ -8,22 +9,14 @@
 		<footer class="site-footer">
 			<hr class="hazard-rule">
 			<div class="site-footer__inner">
-				<div class="site-footer__top">
-					<?php if (has_nav_menu('footer')) : ?>
-						<nav class="footer-nav" aria-label="<?php esc_attr_e('Footer', 'spudworks-mag'); ?>">
-							<?php
-							wp_nav_menu(array(
-								'theme_location' => 'footer',
-								'container'      => false,
-								'menu_class'     => 'footer-nav__list',
-								'fallback_cb'    => false,
-								'depth'          => 1
-							));
-							?>
-						</nav>
-					<?php endif; ?>
-
-					<?php get_template_part('templates/search-box', '', array('class' => 'search-box--footer')); ?>
+				<div class="site-footer__columns">
+					<?php foreach (array('footer-1', 'footer-2', 'footer-3') as $footerColumn) : ?>
+						<div class="site-footer__col">
+							<?php if (is_active_sidebar($footerColumn)) {
+								dynamic_sidebar($footerColumn);
+							} ?>
+						</div>
+					<?php endforeach; ?>
 				</div>
 
 				<p class="site-footer__copy">

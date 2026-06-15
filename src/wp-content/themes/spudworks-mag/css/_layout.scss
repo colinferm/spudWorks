@@ -205,35 +205,93 @@
 	gap: 1.25rem;
 }
 
-// Footer top row: menu on the left, search box pinned to the far right.
-.site-footer__top {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 1rem;
+// Footer widget columns: stack on small screens, three across from tablet up.
+.site-footer__columns {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 2rem;
 	width: 100%;
+	margin-bottom: 2rem;
+
+	@include from($bp-md) {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
 
-.footer-nav {
-	margin-right: auto;
-}
+.site-footer__col {
+	.widget {
+		margin-bottom: 1.8rem;
+	}
 
-.footer-nav__list {
-	list-style: none;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 1.2rem;
-	margin: 0;
-	padding: 0;
+	.widget:last-child {
+		margin-bottom: 0;
+	}
 
-	a {
+	// Editorial serif header, set off by a hairline rule.
+	.widget-title {
+		@include widget-title;
+	}
+
+	// Nav menu: stacked "tag chips" instead of a bulleted list (mirrors the
+	// .term-chips treatment on posts, set vertically).
+	.widget_nav_menu {
+		.menu {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.45rem;
+		}
+
+		.menu-item {
+			margin: 0;
+		}
+
+		.menu-item a {
+			display: inline-block;
+			font-family: $sans;
+			font-size: 0.72rem;
+			font-weight: $weight-bold;
+			letter-spacing: 0.09em;
+			text-transform: uppercase;
+			color: $hazard-yellow;
+			border: 0;
+			padding: 0.28rem 0.65rem;
+			background: rgba($hazard-black, 0.55);
+			border-left: 2px solid $hazard-yellow;
+			transition: color 0.15s ease, background 0.15s ease;
+
+			&:hover,
+			&:focus {
+				color: $hazard-black;
+				background: $hazard-yellow;
+			}
+		}
+
+		.current-menu-item a {
+			color: $hazard-black;
+			background: $hazard-yellow;
+		}
+	}
+
+	// Free text (Custom HTML / Text widget): give the blurb the magazine's
+	// serif voice rather than plain sans body copy.
+	.textwidget {
+		font-family: $serif;
+		font-style: italic;
+		font-size: 1.05rem;
+		line-height: 1.55;
 		color: $paper-dim;
-		border: 0;
-		font-size: 0.9rem;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
 
-		&:hover { color: $hazard-yellow; }
+		p {
+			margin: 0 0 0.8em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
 	}
 }
 
@@ -306,7 +364,7 @@
 	}
 }
 
-.search-box--footer {
-	width: 220px;
-	margin-left: auto; // pin to the far right even without a footer menu
+// Widget contexts (showcase sidebar, footer columns): fill the column width.
+.search-box--widget {
+	width: 100%;
 }

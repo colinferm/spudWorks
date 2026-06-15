@@ -10,6 +10,19 @@
 	}
 }
 
+// Editorial widget header, shared by the footer columns and the showcase
+// sidebar: serif, set off by a hairline rule.
+@mixin widget-title {
+	font-family: $serif;
+	font-weight: $weight-bold;
+	font-size: 1.3rem;
+	line-height: 1.1;
+	color: #f3efe6;
+	margin: 0 0 0.9rem;
+	padding-bottom: 0.45rem;
+	border-bottom: 1px solid $ink-rule;
+}
+
 .container {
 	width: 100%;
 	max-width: $wide-measure;

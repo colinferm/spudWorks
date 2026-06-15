@@ -27,9 +27,12 @@ define("THEMEURI", get_template_directory_uri());
 
 require_once THEMEDIR . '/lib/helpers.php';
 require_once THEMEDIR . '/lib/meta-tags.php';
+require_once THEMEDIR . '/lib/shortcodes.php';
+require_once THEMEDIR . '/lib/widget-featured-post.php';
 
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
+	require_once THEMEDIR . '/admin/editor-tools.php';
 }
 
 /**
@@ -59,15 +62,36 @@ add_action('after_setup_theme', 'spudmagSetup');
  * Register the Showcase-template widget area.
  */
 function spudmagWidgets() {
-	register_sidebar(array(
-		'name'          => __('Showcase Sidebar', 'spudworks-mag'),
-		'id'            => 'showcase-sidebar',
-		'description'   => __('Appears beside content using the Showcase template.', 'spudworks-mag'),
+	// Shared widget chrome so every area marks up the same way.
+	$chrome = array(
 		'before_widget' => '<section id="%1$s" class="widget %2$s">',
 		'after_widget'  => '</section>',
 		'before_title'  => '<h3 class="widget-title">',
 		'after_title'   => '</h3>'
-	));
+	);
+
+	register_sidebar(array(
+		'name'        => __('Showcase Sidebar', 'spudworks-mag'),
+		'id'          => 'showcase-sidebar',
+		'description' => __('Appears beside content using the Showcase template.', 'spudworks-mag')
+	) + $chrome);
+
+	// Three footer columns. The right column is the home for a Search widget.
+	$footerColumns = array(
+		'footer-1' => __('Footer Column 1 (left)', 'spudworks-mag'),
+		'footer-2' => __('Footer Column 2 (center)', 'spudworks-mag'),
+		'footer-3' => __('Footer Column 3 (right)', 'spudworks-mag')
+	);
+
+	foreach ($footerColumns as $id => $name) {
+		register_sidebar(array(
+			'name'        => $name,
+			'id'          => $id,
+			'description' => __('Footer widget column.', 'spudworks-mag')
+		) + $chrome);
+	}
+
+	register_widget('Spudmag_Featured_Post_Widget');
 }
 add_action('widgets_init', 'spudmagWidgets');
 
@@ -86,6 +110,38 @@ function spudmagArchiveTitle($title) {
 	return $title;
 }
 add_filter('get_the_archive_title', 'spudmagArchiveTitle');
+
+/**
+ * Render any core/search block (e.g. a Search widget in the sidebar or a footer
+ * column) as the compact hazard-stripe search box used in the header/footer, so
+ * every search field on the site shares one look. Returns the search-box
+ * partial markup in place of the block's default wp-block-search output.
+ */
+function spudmagRenderSearchBlock($blockContent, $block) {
+	ob_start();
+	get_template_part('templates/search-box', '', array('class' => 'search-box--widget'));
+	return ob_get_clean();
+}
+add_filter('render_block_core/search', 'spudmagRenderSearchBlock', 10, 2);
+
+/**
+ * Ensure rendered images carry the attachment's alt text. The card and hero
+ * templates pass 'alt' => '' on their decorative crops; this filter runs after
+ * that merge and refills the alt from the attachment meta when one exists
+ * (helps accessibility + search), leaving it empty when none is set so
+ * genuinely decorative images stay decorative. Also covers galleries and any
+ * future image without per-template edits.
+ */
+function spudmagImageAlt($attr, $attachment, $size) {
+	if (empty($attr['alt'])) {
+		$alt = trim(wp_strip_all_tags(get_post_meta($attachment->ID, '_wp_attachment_image_alt', true)));
+		if ($alt !== '') {
+			$attr['alt'] = $alt;
+		}
+	}
+	return $attr;
+}
+add_filter('wp_get_attachment_image_attributes', 'spudmagImageAlt', 10, 3);
 
 /**
  * Enqueue the compiled stylesheet and front-end scripts.

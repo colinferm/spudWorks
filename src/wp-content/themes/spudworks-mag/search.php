@@ -32,7 +32,7 @@ get_header();
 	<?php else : ?>
 		<div class="no-results measure">
 			<p><?php esc_html_e('No stories matched that search. Try another term:', 'spudworks-mag'); ?></p>
-			<?php get_search_form(); ?>
+			<?php get_search_form(array('variant' => 'full')); ?>
 		</div>
 	<?php endif; ?>
 </div>
