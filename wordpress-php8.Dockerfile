@@ -52,7 +52,7 @@ RUN printf "[xdebug] \
 RUN printf "error_reporting=E_ALL" > /usr/local/etc/php/conf.d/error_reporting.ini
 
 # Set up Gulp to process SCSS
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
   && apt-get install -y nodejs \
   && node --version \
   && npm --version
