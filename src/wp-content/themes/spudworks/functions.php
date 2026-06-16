@@ -59,4 +59,30 @@ function get_items_for_cat($cat_id, $limit = 10) {
 	return $items;
 }
 
+// Source - https://stackoverflow.com/a/6175103
+// Posted by Jan Fabry
+// Retrieved 2026-06-16, License - CC BY-SA 3.0
+
+add_action( 'init', 'so6159452_init' );
+function so6159452_init() {
+    add_rewrite_tag( '%category_id%', '([0-9]+)' );
+}
+
+add_filter( 'post_link', 'so6159452_post_link', 10, 2 );
+function so6159452_post_link( $permalink, $post ) {
+    if ( false !== strpos( $permalink, '%category_id%' ) ) {
+        $cats = get_the_category( $post->ID );
+        if ( $cats ) {
+            usort( $cats, '_usort_terms_by_ID' ); // order by ID
+            $category_id = $cats[0]->cat_ID;
+        } else {
+            // Error: no category assigned to this post
+            // Just use a dummy variable
+            $category_id = '0';
+        }
+        $permalink = str_replace( '%category_id%', $category_id, $permalink );
+    }
+    return $permalink;
+}
+
 ?>
