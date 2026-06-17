@@ -270,6 +270,7 @@ $notice-info:   $paper-dim;
 		display: flex;
 		color: $notice-info;
 		margin-top: 0.1rem;
+		align-self: center;
 	}
 
 	&__body {
@@ -280,6 +281,7 @@ $notice-info:   $paper-dim;
 
 		p {
 			margin: 0 0 0.6em;
+			font-style: italic;
 
 			&:last-child {
 				margin-bottom: 0;

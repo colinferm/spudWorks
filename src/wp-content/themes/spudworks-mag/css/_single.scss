@@ -39,6 +39,11 @@
 // --- Header ----------------------------------------------------------------
 .article-header {
 	margin-bottom: 2rem;
+	padding: 0 10px;
+
+	@include from($bp-md) {
+		padding: 0;
+	}
 }
 
 .article-title {
@@ -85,6 +90,12 @@
 .article-content {
 	font-size: 1.12rem;
 	line-height: 1.75;
+
+	padding: 0 10px;
+
+	@include from($bp-md) {
+		padding: 0;
+	}
 
 	h2, h3, h4 {
 		margin-top: 1.8em;
@@ -172,8 +183,14 @@
 		margin: 0;
 	}
 
-	.gallery-caption {
-		margin: 0.4rem 0 0;
+	// No captions/alt text below gallery thumbnails — a gallery reads as a clean
+	// panel of images wherever it appears (content or sidebar). The text stays in
+	// the DOM so the lightbox can still surface a real caption when an image is
+	// opened.
+	.gallery-caption,
+	.wp-caption-text,
+	figcaption {
+		display: none;
 	}
 }
 

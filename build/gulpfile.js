@@ -1,5 +1,21 @@
 'use strict';
 
+// gulp 4's plumbing (vinyl-fs's gulp.dest, and gulp-sourcemaps via clone-stats)
+// constructs fs.Stats objects through the now-deprecated `new fs.Stats()`
+// constructor, so newer Node prints a DEP0180 DeprecationWarning on every build
+// — noise from the build tooling, not from our Sass or our code. Silence just
+// that one warning so the live watch output stays clean; every other warning
+// (including any real Sass deprecation) still passes through.
+const originalEmitWarning = process.emitWarning.bind(process);
+process.emitWarning = function (warning, ...rest) {
+	const message = typeof warning === 'string' ? warning : (warning && warning.message) || '';
+	const code = (rest[0] && typeof rest[0] === 'object') ? rest[0].code : rest[1];
+	if (code === 'DEP0180' || message.indexOf('fs.Stats constructor is deprecated') !== -1) {
+		return;
+	}
+	return originalEmitWarning(warning, ...rest);
+};
+
 const path              = require('path');
 const { fileURLToPath } = require('url');
 const { Transform }     = require('stream');
