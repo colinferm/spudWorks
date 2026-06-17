@@ -36,6 +36,7 @@ $isPage = isset($args['is_page']) ? (bool) $args['is_page'] : false;
 		<?php get_template_part('templates/author-box'); ?>
 	<?php endif; ?>
 	<?php get_template_part('templates/article-tags'); ?>
+	<?php if (!$isPage) comments_template(); ?>
 	<?php get_template_part('templates/related-stories'); ?>
 
 </article>

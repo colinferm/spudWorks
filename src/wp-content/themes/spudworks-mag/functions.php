@@ -29,6 +29,8 @@ require_once THEMEDIR . '/lib/helpers.php';
 require_once THEMEDIR . '/lib/meta-tags.php';
 require_once THEMEDIR . '/lib/shortcodes.php';
 require_once THEMEDIR . '/lib/widget-featured-post.php';
+require_once THEMEDIR . '/lib/comments.php';
+require_once THEMEDIR . '/lib/comment-security.php';
 
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
@@ -167,5 +169,16 @@ function spudmagAssets() {
 
 	wp_enqueue_script('spudmag-main', THEMEURI . '/js/main.js', array(), THEMEVERSION, true);
 	wp_enqueue_script('spudmag-lightbox', THEMEURI . '/js/lightbox.js', array(), THEMEVERSION, true);
+
+	// Comment assets only where comments render: single posts with comments open,
+	// excluding the fiction template (which has no comment section). The honeypot
+	// timer is needed wherever the form shows; comment-reply powers native
+	// threaded replies when threading is enabled.
+	if (is_singular('post') && comments_open() && spudmagGetTemplate(get_the_ID()) !== 'fiction') {
+		wp_enqueue_script('spudmag-comments', THEMEURI . '/js/comments.js', array(), THEMEVERSION, true);
+		if (get_option('thread_comments')) {
+			wp_enqueue_script('comment-reply');
+		}
+	}
 }
 add_action('wp_enqueue_scripts', 'spudmagAssets');

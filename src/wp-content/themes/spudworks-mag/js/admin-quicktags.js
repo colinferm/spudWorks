@@ -30,4 +30,24 @@
 		'Insert an author note',
 		201
 	);
+
+	QTags.addButton(
+		'spudmag_featured_comment',
+		'featured-comment',
+		'[featured-comment id=""]',
+		'[/featured-comment]',
+		'',
+		'Insert a featured comment quote',
+		202
+	);
+
+	QTags.addButton(
+		'spudmag_notice',
+		'notice',
+		'[notice level="info"]',
+		'[/notice]',
+		'',
+		'Insert a notice box',
+		203
+	);
 })();

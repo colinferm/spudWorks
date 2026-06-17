@@ -38,6 +38,7 @@ $postId = get_the_ID();
 
 	<?php get_template_part('templates/author-box'); ?>
 	<?php get_template_part('templates/article-tags'); ?>
+	<?php comments_template(); ?>
 	<?php get_template_part('templates/related-stories'); ?>
 
 </article>

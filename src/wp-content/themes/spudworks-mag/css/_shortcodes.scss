@@ -139,3 +139,167 @@
 		}
 	}
 }
+
+// --- [featured-comment] ----------------------------------------------------
+// A reader comment pulled into the prose as a quoted callout, framed by large
+// typographic quote marks.
+.featured-comment {
+	margin: 2.5rem 0;
+	padding: 0 1.7rem 1.6rem;
+	background: $ink-panel;
+	border: 1px solid $ink-rule;
+	border-top: 3px solid $hazard-yellow;
+	border-radius: 3px;
+	overflow: hidden; // let the header strip meet the rounded corners cleanly
+
+	// Thin dark-gray header strip flush under the yellow line.
+	&__label {
+		margin: 0 -1.7rem 1.5rem;
+		padding: 0.45rem 1.7rem;
+		background: #20232a;
+		font-family: $sans;
+		font-size: 0.68rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: $paper-dim;
+	}
+
+	&__preface {
+		font-family: $sans;
+		font-size: 0.95rem;
+		color: $paper-dim;
+		margin-bottom: 0.9rem;
+		padding-left: 2rem;
+
+		p {
+			margin: 0 0 0.5em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	&__quote {
+		position: relative;
+		margin: 0;
+		// Reset the global pull-quote blockquote treatment (top/bottom hazard
+		// rules, heavy weight) — this callout carries its own framing. The text
+		// sits tight against an oversized opening quote mark.
+		padding: 0 0.5rem 0 2rem;
+		border: 0;
+		font-family: $serif;
+		font-style: italic;
+		font-weight: $weight-medium;
+		font-size: clamp(1.5rem, 2.4vw, 1.85rem);
+		line-height: 1.4;
+		color: #f6f1e6;
+
+		&::before {
+			content: "\201C";
+			position: absolute;
+			left: -0.15rem;
+			top: -0.4rem;
+			font-family: $serif;
+			font-style: normal;
+			font-size: 4.8rem;
+			line-height: 1;
+			color: $hazard-yellow;
+		}
+
+		p {
+			margin: 0 0 0.5em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	&__cite {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		margin-top: 1rem;
+		padding-left: 2rem;
+
+		// Round avatar matching the post author box. Scoped through .cite so it
+		// outweighs the global `.article-content img` border-radius/margin.
+		.featured-comment__avatar img {
+			width: 48px;
+			height: 48px;
+			border-radius: 50%;
+			object-fit: cover;
+			border: 2px solid $hazard-yellow;
+			display: block;
+			margin: 0;
+		}
+	}
+
+	&__author {
+		font-family: $sans;
+		font-size: 0.82rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: $paper-dim;
+	}
+}
+
+// --- [notice] --------------------------------------------------------------
+// Full-width callout. Level sets the accent + icon colour. The palette has no
+// red, so danger is defined locally here.
+$notice-danger: #e2503f;
+$notice-info:   $paper-dim;
+
+.notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.85rem;
+	width: 100%;
+	margin: 2rem 0;
+	padding: 1.1rem 1.3rem;
+	background: $ink-panel;
+	border: 1px solid $ink-rule;
+	border-left: 4px solid $notice-info;
+	border-radius: 0 3px 3px 0;
+
+	&__icon {
+		flex: 0 0 auto;
+		display: flex;
+		color: $notice-info;
+		margin-top: 0.1rem;
+	}
+
+	&__body {
+		font-family: $sans;
+		font-size: 0.98rem;
+		line-height: 1.6;
+		color: $paper;
+
+		p {
+			margin: 0 0 0.6em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+		}
+	}
+
+	&--warn {
+		border-left-color: $hazard-yellow;
+
+		.notice__icon {
+			color: $hazard-yellow;
+		}
+	}
+
+	&--danger {
+		border-left-color: $notice-danger;
+
+		.notice__icon {
+			color: $notice-danger;
+		}
+	}
+}

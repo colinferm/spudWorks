@@ -17,7 +17,7 @@ $hasImage = has_post_thumbnail($postId);
 	<?php endif; ?>
 
 	<div class="card__body card__body--centered">
-		<span class="card-flag">Pinned</span>
+		<span class="card-flag">Featured</span>
 		<?php get_template_part('templates/card-meta', '', array(
 			'postId'      => $postId,
 			'headingTag'  => 'h1',
