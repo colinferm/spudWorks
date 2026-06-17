@@ -55,9 +55,13 @@ body.lightbox-open {
 }
 
 .lightbox__caption {
-	margin-top: 0.75rem;
-	color: $paper-dim;
-	font-size: 0.9rem;
+	margin-top: 0.85rem;
+	font-family: $sans;
+	font-weight: $weight-bold;
+	font-size: 0.78rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: $accent-deep; // dim gold — a quiet nod to the tags, not the bright hazard-yellow
 	text-align: center;
 	max-width: 60ch;
 }

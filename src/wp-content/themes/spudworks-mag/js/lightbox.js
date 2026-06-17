@@ -52,6 +52,20 @@
 		return img.currentSrc || img.src;
 	}
 
+	function captionFor(img) {
+		// The lightbox caption is the image's real WordPress Caption (the
+		// figcaption / .wp-caption-text) - never the alt text, which is
+		// auto-filled for accessibility and would otherwise show on every image.
+		var fig = img.closest('figure, .wp-caption');
+		if (fig) {
+			var cap = fig.querySelector('figcaption, .wp-caption-text');
+			if (cap) {
+				return cap.textContent.trim();
+			}
+		}
+		return '';
+	}
+
 	function originalSrcFor(url) {
 		// WordPress derivatives are named "name-WxH.ext"; drop that suffix to get
 		// the uncropped original (e.g. a square 700x700 gallery crop -> the full
@@ -110,7 +124,8 @@
 				return {
 					src: originalSrcFor(best),
 					fallback: best,
-					alt: img.getAttribute('alt') || ''
+					alt: img.getAttribute('alt') || '',
+					caption: captionFor(img)
 				};
 			});
 			groups.push(sources);
@@ -138,8 +153,9 @@
 			};
 			imgEl.src = item.src;
 			imgEl.alt = item.alt;
-			captionEl.textContent = item.alt;
-			captionEl.style.display = item.alt ? '' : 'none';
+			// Show the caption only when the image has a real WordPress Caption.
+			captionEl.textContent = item.caption;
+			captionEl.style.display = item.caption ? '' : 'none';
 			var multiple = groups[current.group].length > 1;
 			prevBtn.hidden = !multiple;
 			nextBtn.hidden = !multiple;

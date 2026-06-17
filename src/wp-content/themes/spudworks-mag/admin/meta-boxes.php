@@ -33,6 +33,8 @@ function spudmagRenderMetaBox($post) {
 	$template = spudmagGetTemplate($post->ID);
 	$subhead = spudmagGetSubhead($post->ID);
 	$pinned = spudmagIsPinned($post->ID);
+	$rating = spudmagGetRating($post->ID);
+	$reviewItem = spudmagGetReviewItem($post->ID);
 
 	$templates = array(
 		'default'  => __('Default', 'spudworks-mag'),
@@ -59,6 +61,15 @@ function spudmagRenderMetaBox($post) {
 			<input type="checkbox" name="spudmag_pinned" id="spudmag-pinned" value="1" <?php checked($pinned, true); ?>>
 			<?php esc_html_e('Pin to top of home page', 'spudworks-mag'); ?>
 		</label>
+	</p>
+	<hr>
+	<p>
+		<label for="spudmag-rating"><strong><?php esc_html_e('Review rating', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(Reviews only)', 'spudworks-mag'); ?></em></label><br>
+		<input type="number" name="spudmag_rating" id="spudmag-rating" class="widefat" min="0" max="5" step="0.5" value="<?php echo $rating > 0 ? esc_attr($rating) : ''; ?>" placeholder="0–5">
+	</p>
+	<p>
+		<label for="spudmag-review-item"><strong><?php esc_html_e('Item reviewed', 'spudworks-mag'); ?></strong></label><br>
+		<input type="text" name="spudmag_review_item" id="spudmag-review-item" class="widefat" value="<?php echo esc_attr($reviewItem); ?>" placeholder="<?php esc_attr_e('Defaults to the post title', 'spudworks-mag'); ?>">
 	</p>
 	<?php
 }
@@ -96,6 +107,23 @@ function spudmagSaveMeta($postId) {
 		update_post_meta($postId, METAPINNED, '1');
 	} else {
 		delete_post_meta($postId, METAPINNED);
+	}
+
+	// Review rating (0-5, half steps). A blank/zero value clears it so the post
+	// emits a plain Article rather than a Review with a 0 rating.
+	$rating = isset($_POST['spudmag_rating']) ? (float) $_POST['spudmag_rating'] : 0.0;
+	$rating = max(0.0, min(5.0, $rating));
+	if ($rating > 0) {
+		update_post_meta($postId, METARATING, $rating);
+	} else {
+		delete_post_meta($postId, METARATING);
+	}
+
+	$reviewItem = isset($_POST['spudmag_review_item']) ? sanitize_text_field(wp_unslash($_POST['spudmag_review_item'])) : '';
+	if ($reviewItem !== '') {
+		update_post_meta($postId, METAREVIEWITEM, $reviewItem);
+	} else {
+		delete_post_meta($postId, METAREVIEWITEM);
 	}
 }
 add_action('save_post', 'spudmagSaveMeta');

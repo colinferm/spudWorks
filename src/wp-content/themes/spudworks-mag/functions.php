@@ -20,6 +20,8 @@ define("THEMEDATEFORMAT", get_option('date_format'));
 define("METATEMPLATE", "_spudmag_template");
 define("METASUBHEAD", "_spudmag_subhead");
 define("METAPINNED", "_spudmag_pinned");
+define("METARATING", "_spudmag_rating");
+define("METAREVIEWITEM", "_spudmag_review_item");
 
 // Theme directory + URI, resolved per-site so the theme is multisite-safe.
 define("THEMEDIR", get_template_directory());
@@ -27,6 +29,7 @@ define("THEMEURI", get_template_directory_uri());
 
 require_once THEMEDIR . '/lib/helpers.php';
 require_once THEMEDIR . '/lib/meta-tags.php';
+require_once THEMEDIR . '/lib/schema.php';
 require_once THEMEDIR . '/lib/shortcodes.php';
 require_once THEMEDIR . '/lib/widget-featured-post.php';
 require_once THEMEDIR . '/lib/comments.php';

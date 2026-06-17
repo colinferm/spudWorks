@@ -55,6 +55,43 @@ function spudmagIsPinned($postId) {
 }
 
 /**
+ * The review rating for a post on a 0-5 scale (0.0 when unset/blank). Only
+ * meaningful for posts in the Reviews category; used to emit a schema Review.
+ */
+function spudmagGetRating($postId) {
+	$value = get_post_meta($postId, METARATING, true);
+	if ($value === '' || $value === null) {
+		return 0.0;
+	}
+	return max(0.0, min(5.0, (float) $value));
+}
+
+/**
+ * The name of the thing a review is about (empty string if none).
+ */
+function spudmagGetReviewItem($postId) {
+	return trim((string) get_post_meta($postId, METAREVIEWITEM, true));
+}
+
+/**
+ * A post's primary category: the first real (non-"uncategorized") category,
+ * which drives the breadcrumb trail and schema articleSection. Returns a
+ * WP_Term or null when the post has only the default category.
+ */
+function spudmagPrimaryCategory($postId) {
+	$cats = get_the_category($postId);
+	if (!is_array($cats)) {
+		return null;
+	}
+	foreach ($cats as $cat) {
+		if ($cat->slug !== 'uncategorized') {
+			return $cat;
+		}
+	}
+	return null;
+}
+
+/**
  * Output up to $max tag/category "chips" for a post, tags first.
  * Renders nothing if the post has no terms.
  */

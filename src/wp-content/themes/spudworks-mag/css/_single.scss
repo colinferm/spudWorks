@@ -249,6 +249,15 @@
 		@include widget-title;
 	}
 
+	// The sidebar gallery reads as a clean panel of images — no captions under
+	// the thumbnails. (The text stays in the DOM, so the lightbox can still
+	// show it when an image is opened.)
+	.gallery-caption,
+	.wp-caption-text,
+	figcaption {
+		display: none;
+	}
+
 	// Plain widget lists (Recent Posts, Archives, ...) get hairline rows. The
 	// :not() keeps a Featured Post card's .term-chips from inheriting them.
 	ul:not(.term-chips) {
