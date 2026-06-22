@@ -13,7 +13,7 @@
 $postId = isset($args['postId']) ? (int) $args['postId'] : get_the_ID();
 $headingTag = isset($args['headingTag']) ? $args['headingTag'] : 'h2';
 $showByline = isset($args['showByline']) ? (bool) $args['showByline'] : true;
-$maxChips = isset($args['maxChips']) ? (int) $args['maxChips'] : 3;
+$maxChips = isset($args['maxChips']) ? (int) $args['maxChips'] : 4;
 $stretchLink = isset($args['stretchLink']) ? (bool) $args['stretchLink'] : false;
 $linkClass = $stretchLink ? ' class="stretched-link"' : '';
 

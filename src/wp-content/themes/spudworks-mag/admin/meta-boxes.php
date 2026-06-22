@@ -35,6 +35,7 @@ function spudmagRenderMetaBox($post) {
 	$pinned = spudmagIsPinned($post->ID);
 	$rating = spudmagGetRating($post->ID);
 	$reviewItem = spudmagGetReviewItem($post->ID);
+	$reviewType = spudmagGetReviewType($post->ID);
 
 	$templates = array(
 		'default'  => __('Default', 'spudworks-mag'),
@@ -70,6 +71,16 @@ function spudmagRenderMetaBox($post) {
 	<p>
 		<label for="spudmag-review-item"><strong><?php esc_html_e('Item reviewed', 'spudworks-mag'); ?></strong></label><br>
 		<input type="text" name="spudmag_review_item" id="spudmag-review-item" class="widefat" value="<?php echo esc_attr($reviewItem); ?>" placeholder="<?php esc_attr_e('Defaults to the post title', 'spudworks-mag'); ?>">
+	</p>
+	<p>
+		<label for="spudmag-review-type"><strong><?php esc_html_e('Item type', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(for the review snippet)', 'spudworks-mag'); ?></em></label><br>
+		<select name="spudmag_review_type" id="spudmag-review-type" class="widefat">
+			<?php foreach (spudmagReviewTypes() as $value => $label) : ?>
+				<option value="<?php echo esc_attr($value); ?>" <?php selected($reviewType, $value); ?>>
+					<?php echo esc_html($label); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
 	</p>
 	<?php
 }
@@ -124,6 +135,15 @@ function spudmagSaveMeta($postId) {
 		update_post_meta($postId, METAREVIEWITEM, $reviewItem);
 	} else {
 		delete_post_meta($postId, METAREVIEWITEM);
+	}
+
+	// Item type for the review's itemReviewed @type; only stored when it's one
+	// of the Google-accepted types, otherwise cleared (the getter then defaults).
+	$reviewType = isset($_POST['spudmag_review_type']) ? sanitize_text_field(wp_unslash($_POST['spudmag_review_type'])) : '';
+	if (array_key_exists($reviewType, spudmagReviewTypes())) {
+		update_post_meta($postId, METAREVIEWTYPE, $reviewType);
+	} else {
+		delete_post_meta($postId, METAREVIEWTYPE);
 	}
 }
 add_action('save_post', 'spudmagSaveMeta');

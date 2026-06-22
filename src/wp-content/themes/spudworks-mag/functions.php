@@ -22,6 +22,7 @@ define("METASUBHEAD", "_spudmag_subhead");
 define("METAPINNED", "_spudmag_pinned");
 define("METARATING", "_spudmag_rating");
 define("METAREVIEWITEM", "_spudmag_review_item");
+define("METAREVIEWTYPE", "_spudmag_review_type");
 
 // Theme directory + URI, resolved per-site so the theme is multisite-safe.
 define("THEMEDIR", get_template_directory());
@@ -172,6 +173,10 @@ function spudmagAssets() {
 
 	wp_enqueue_script('spudmag-main', THEMEURI . '/js/main.js', array(), THEMEVERSION, true);
 	wp_enqueue_script('spudmag-lightbox', THEMEURI . '/js/lightbox.js', array(), THEMEVERSION, true);
+
+	// Google Analytics interaction events (comment/search/related clicks). The
+	// gtag library itself is loaded in footer.php; this just reports to it.
+	wp_enqueue_script('spudmag-analytics', THEMEURI . '/js/analytics.js', array(), THEMEVERSION, true);
 
 	// Comment assets only where comments render: single posts with comments open,
 	// excluding the fiction template (which has no comment section). The honeypot

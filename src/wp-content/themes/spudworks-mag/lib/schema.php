@@ -273,7 +273,8 @@ function spudmagSchemaArticle($postId, $anchorUrl, $hasImage) {
 		}
 		$item = spudmagGetReviewItem($postId);
 		$node['itemReviewed'] = array(
-			'@type' => 'Thing',
+			// A Google-accepted itemReviewed @type (editor-chosen), not bare "Thing".
+			'@type' => spudmagGetReviewType($postId),
 			'name'  => $item !== '' ? $item : get_the_title($postId)
 		);
 	}

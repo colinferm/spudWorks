@@ -12,6 +12,29 @@
 
 	var IMAGE_HREF = /\.(jpe?g|png|gif|webp|avif|bmp|svg)(\?.*)?$/i;
 
+	// Friendly labels for each lightbox region (the [data-lightbox] value).
+	var SOURCE_LABELS = { content: 'content_well', sidebar: 'sidebar_widget' };
+
+	// Fire a GA4 event if analytics is present; a blocked/absent gtag is a no-op
+	// so the lightbox keeps working regardless.
+	function track(name, params) {
+		if (typeof window.gtag === 'function') {
+			window.gtag('event', name, params || {});
+		}
+	}
+
+	// Running count of every image shown in the lightbox this browsing session.
+	function bumpSessionViews() {
+		var count = 1;
+		try {
+			count = (parseInt(window.sessionStorage.getItem('spudmag_lb_views'), 10) || 0) + 1;
+			window.sessionStorage.setItem('spudmag_lb_views', count);
+		} catch (e) {
+			// sessionStorage can throw in private mode; fall back to a soft count.
+		}
+		return count;
+	}
+
 	function largestSrcsetUrl(img) {
 		// Pick the widest candidate declared in srcset. Galleries link to the
 		// attachment page (not a file), so without this the lightbox would fall
@@ -101,6 +124,7 @@
 
 		// Build the group of images for each region; tag each with its group.
 		var groups = [];
+		var groupSources = []; // friendly source label per group, parallel to groups
 		regions.forEach(function (region) {
 			var imgs = Array.prototype.slice.call(region.querySelectorAll('img'));
 			imgs = imgs.filter(function (img) {
@@ -111,6 +135,8 @@
 				return;
 			}
 			var groupIndex = groups.length;
+			var regionName = region.getAttribute('data-lightbox') || '';
+			groupSources[groupIndex] = SOURCE_LABELS[regionName] || regionName || 'content_well';
 			var sources = imgs.map(function (img, i) {
 				img.classList.add('lightbox-trigger');
 				img.dataset.lbGroup = groupIndex;
@@ -140,7 +166,29 @@
 		var captionEl = overlay.querySelector('.lightbox__caption');
 		var prevBtn = overlay.querySelector('.lightbox__prev');
 		var nextBtn = overlay.querySelector('.lightbox__next');
-		var current = { group: 0, index: 0 };
+		var current = { group: 0, index: 0, imagesViewed: 0 };
+
+		function currentSource() {
+			return groupSources[current.group];
+		}
+
+		function currentItem() {
+			return groups[current.group][current.index];
+		}
+
+		// Count an image being shown: bump the per-open and per-session tallies,
+		// then emit the per-view event. Returns the running session count.
+		function recordView() {
+			current.imagesViewed += 1;
+			var sessionCount = bumpSessionViews();
+			var item = currentItem();
+			track('lightbox_image_view', {
+				image_source: currentSource(),
+				image_url: item.src,
+				session_image_count: sessionCount
+			});
+			return sessionCount;
+		}
 
 		function render() {
 			var item = groups[current.group][current.index];
@@ -164,23 +212,43 @@
 		function open(group, index) {
 			current.group = group;
 			current.index = index;
+			current.imagesViewed = 0;
 			render();
 			overlay.classList.add('is-open');
 			overlay.setAttribute('aria-hidden', 'false');
 			document.body.classList.add('lightbox-open');
+			var item = currentItem();
+			track('lightbox_open', {
+				image_source: currentSource(),
+				image_url: item.src,
+				image_position: current.index + 1,
+				gallery_size: groups[current.group].length,
+				session_image_count: recordView()
+			});
 		}
 
-		function close() {
+		function close(method) {
 			overlay.classList.remove('is-open');
 			overlay.setAttribute('aria-hidden', 'true');
 			document.body.classList.remove('lightbox-open');
 			imgEl.src = '';
+			track('lightbox_close', {
+				method: method || 'button',
+				image_source: currentSource(),
+				images_viewed: current.imagesViewed
+			});
 		}
 
-		function step(delta) {
+		function step(delta, method) {
 			var group = groups[current.group];
 			current.index = (current.index + delta + group.length) % group.length;
 			render();
+			track('lightbox_navigate', {
+				direction: delta > 0 ? 'next' : 'prev',
+				method: method || 'button',
+				image_source: currentSource()
+			});
+			recordView();
 		}
 
 		// Open on click of any trigger image (or its media-file link).
@@ -195,29 +263,32 @@
 
 		overlay.addEventListener('click', function (event) {
 			if (event.target.dataset.close) {
-				close();
+				close('backdrop');
 			}
 		});
-		overlay.querySelector('.lightbox__close').addEventListener('click', close);
-		prevBtn.addEventListener('click', function () { step(-1); });
-		nextBtn.addEventListener('click', function () { step(1); });
+		overlay.querySelector('.lightbox__close').addEventListener('click', function () { close('button'); });
+		prevBtn.addEventListener('click', function () { step(-1, 'button'); });
+		nextBtn.addEventListener('click', function () { step(1, 'button'); });
 
 		document.addEventListener('keydown', function (event) {
 			if (!overlay.classList.contains('is-open')) {
 				return;
 			}
 			if (event.key === 'Escape') {
-				close();
+				close('keyboard');
 			} else if (event.key === 'ArrowLeft') {
-				step(-1);
+				step(-1, 'keyboard');
 			} else if (event.key === 'ArrowRight') {
-				step(1);
+				step(1, 'keyboard');
 			}
 		});
 
-		// Touch swipe (mobile): a mostly-horizontal drag past the threshold steps
-		// through the group. Swipe left advances, swipe right goes back.
+		// Touch swipe (mobile): a mostly-horizontal drag steps through the group
+		// (swipe left advances, right goes back); a clear downward drag dismisses
+		// the lightbox, the way an iOS sheet does. The dismiss threshold is larger
+		// so an incidental vertical wobble while paging doesn't close the viewer.
 		var SWIPE_THRESHOLD = 40;
+		var DISMISS_THRESHOLD = 80;
 		var touchStartX = 0;
 		var touchStartY = 0;
 
@@ -232,7 +303,9 @@
 			var dx = touch.clientX - touchStartX;
 			var dy = touch.clientY - touchStartY;
 			if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
-				step(dx < 0 ? 1 : -1);
+				step(dx < 0 ? 1 : -1, 'swipe');
+			} else if (dy > DISMISS_THRESHOLD && dy > Math.abs(dx)) {
+				close('swipe_down');
 			}
 		}, { passive: true });
 	}

@@ -25,7 +25,7 @@ function spudmagCardBeat($index) {
 		array('tpl' => 'card-overlay', 'span' => 'span-3 row-2'),
 		array('tpl' => 'card-under',   'span' => 'span-3'),
 		array('tpl' => 'card-overlay', 'span' => 'span-3'),
-		array('tpl' => 'card-under',   'span' => 'span-2'),
+		array('tpl' => 'card-under',   'span' => 'span-3'),
 		array('tpl' => 'card-under',   'span' => 'span-4')
 	);
 	return $rhythm[$index % count($rhythm)];
@@ -74,6 +74,42 @@ function spudmagGetReviewItem($postId) {
 }
 
 /**
+ * The schema.org @types Google accepts for a Review's itemReviewed (a subset of
+ * the broader schema vocabulary — plain "Thing" is valid schema but Google
+ * rejects it for review snippets). Key = the @type emitted in the JSON-LD;
+ * value = the label shown in the editor. Ordered alphabetically by label.
+ */
+function spudmagReviewTypes() {
+	return array(
+		'SoftwareApplication' => __('App', 'spudworks-mag'),
+		'Book'                => __('Book', 'spudworks-mag'),
+		'BookSeries'          => __('Book Series', 'spudworks-mag'),
+		'Course'              => __('Course List', 'spudworks-mag'),
+		'Game'                => __('Game', 'spudworks-mag'),
+		'Movie'               => __('Movie', 'spudworks-mag'),
+		'MovieSeries'         => __('Movie Series', 'spudworks-mag'),
+		'PodcastEpisode'      => __('Podcast Episode', 'spudworks-mag'),
+		'PodcastSeason'       => __('Podcast Season', 'spudworks-mag'),
+		'PodcastSeries'       => __('Podcast Series', 'spudworks-mag'),
+		'Product'             => __('Product', 'spudworks-mag'),
+		'TVEpisode'           => __('TV Episode', 'spudworks-mag'),
+		'TVSeason'            => __('TV Season', 'spudworks-mag'),
+		'TVSeries'            => __('TV Series', 'spudworks-mag'),
+		'VideoGame'           => __('Video Game', 'spudworks-mag'),
+		'VideoGameSeries'     => __('Video Game Series', 'spudworks-mag')
+	);
+}
+
+/**
+ * The chosen itemReviewed @type for a post, validated against the allowed list.
+ * Falls back to the generic-but-Google-valid 'Product' when nothing valid is set.
+ */
+function spudmagGetReviewType($postId) {
+	$value = (string) get_post_meta($postId, METAREVIEWTYPE, true);
+	return array_key_exists($value, spudmagReviewTypes()) ? $value : 'Product';
+}
+
+/**
  * A post's primary category: the first real (non-"uncategorized") category,
  * which drives the breadcrumb trail and schema articleSection. Returns a
  * WP_Term or null when the post has only the default category.
@@ -92,36 +128,53 @@ function spudmagPrimaryCategory($postId) {
 }
 
 /**
- * Output up to $max tag/category "chips" for a post, tags first.
- * Renders nothing if the post has no terms.
+ * Sort terms by popularity (post count, most first); ties break by name so the
+ * order is stable wherever this runs.
+ */
+function spudmagTermCountSort($a, $b) {
+	if ($a->count === $b->count) {
+		return strcasecmp($a->name, $b->name);
+	}
+	return $b->count - $a->count;
+}
+
+/**
+ * Output up to $max tag/category "chips" for a post:
+ *   1. the post's single most popular category first (by post count, skipping
+ *      the default "uncategorized");
+ *   2. then its tags ordered by popularity (post count, most first).
+ * So a 3-chip card shows the top category + the two most popular tags, and the
+ * under-post list uses the same popularity order. Renders nothing with no terms.
  */
 function spudmagTermChips($postId, $max = 3) {
-	$terms = array();
+	$chips = array();
 
-	$tags = get_the_tags($postId);
-	if (is_array($tags)) {
-		$terms = array_merge($terms, $tags);
-	}
-
-	if (count($terms) < $max) {
-		$cats = get_the_category($postId);
-		if (is_array($cats)) {
-			foreach ($cats as $cat) {
-				if ($cat->slug === 'uncategorized') {
-					continue;
-				}
-				$terms[] = $cat;
-			}
+	// Lead with the most popular real category.
+	$cats = get_the_category($postId);
+	if (is_array($cats)) {
+		$cats = array_filter($cats, function($cat) {
+			return $cat->slug !== 'uncategorized';
+		});
+		if (!empty($cats)) {
+			usort($cats, 'spudmagTermCountSort');
+			$chips[] = $cats[0];
 		}
 	}
 
-	if (empty($terms)) {
+	// Then tags, most popular first.
+	$tags = get_the_tags($postId);
+	if (is_array($tags)) {
+		usort($tags, 'spudmagTermCountSort');
+		$chips = array_merge($chips, $tags);
+	}
+
+	$chips = array_slice($chips, 0, $max);
+	if (empty($chips)) {
 		return;
 	}
 
-	$terms = array_slice($terms, 0, $max);
 	echo '<ul class="term-chips">';
-	foreach ($terms as $term) {
+	foreach ($chips as $term) {
 		$link = get_term_link($term);
 		if (is_wp_error($link)) {
 			continue;

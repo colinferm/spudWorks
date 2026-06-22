@@ -10,7 +10,7 @@ $subhead = spudmagGetSubhead($postId);
 $isPage = isset($args['is_page']) ? (bool) $args['is_page'] : false;
 ?>
 <header class="article-header measure">
-	<?php spudmagTermChips($postId, 3); ?>
+	<?php spudmagTermChips($postId, 4	); ?>
 
 	<h1 class="article-title"><?php the_title(); ?></h1>
 
