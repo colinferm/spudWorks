@@ -1,0 +1,105 @@
+// spudWorks Magazine - admin (wp-admin) stylesheet.
+// A separate entry from the front-end theme: rules here style the WordPress
+// dashboard and plugin screens (e.g. Editorial Calendar). Authored in SCSS and
+// compiled to admin.css by the project's Gulp task; enqueued on every admin
+// screen via spudmagAdminAssets() in admin/editor-tools.php.
+//
+// Only the design tokens are imported (variables emits no CSS of its own), so
+// this file starts empty — add only what you write below. The palette/type
+// tokens ($ink, $paper, $hazard-yellow, $serif, …) and the breakpoint values
+// ($bp-sm/$bp-md/$bp-lg/$bp-xl, usable in `@media (min-width: $bp-md) { … }`)
+// are all available.
+
+@use 'variables' as *;
+
+// --- Admin rules -----------------------------------------------------------
+// (none yet — add formatting rules for admin screens here)
+
+.edcal_row {
+	/* .beforeToday, .todayAndAfter {
+		.dayobj {
+			a.daynewlink {
+				color: #FFF;
+			}
+			.daylabel {
+				color: #FFF;
+				background-color: $hazard-black;
+			}
+		}
+	}
+	.beforeToday {
+		.dayobj {
+			.daylabel {
+				background-image:
+				linear-gradient(rgba(8, 9, 11, 0.62), rgba(8, 9, 11, 0.62)),
+				repeating-linear-gradient(
+					-45deg,
+					rgba($hazard-black, 0.96) 0,
+					rgba($hazard-black, 0.96) 17px,
+					rgba(125, 98, 8, 0.96) 17px,
+					rgba(125, 98, 8, 0.96) 34px
+				);
+			}
+		}
+	} */
+
+	.todayAndAfter {
+		/* .dayobj {
+			.daylabel {
+				background-image:
+				linear-gradient(rgba(8, 9, 11, 0.5), rgba(8, 9, 11, 0.5)),
+				repeating-linear-gradient(
+					-45deg,
+					rgba($hazard-black, 0.96) 0,
+					rgba($hazard-black, 0.96) 17px,
+					rgba($hazard-yellow, 1) 17px,
+					rgba($hazard-yellow, 1) 34px
+				);
+			}
+		} */
+
+		&.today {
+			.dayobj {
+			.daylabel {
+				background-image:
+				linear-gradient(rgba(8, 9, 11, 0.1), rgba(8, 9, 11, 0.1)),
+				repeating-linear-gradient(
+					-45deg,
+					rgba($hazard-black, 0.96) 0,
+					rgba($hazard-black, 0.96) 17px,
+					rgba($hazard-yellow, 1) 17px,
+					rgba($hazard-yellow, 1) 34px
+				);
+			}
+		}
+		}
+	}
+
+	ul.postlist {
+		li {
+			border-bottom: 3px solid #000;
+			border-left: 2px solid #000;
+			padding-left: 2px;
+
+			&.reviews {
+				border-bottom: 3px solid rgb(18, 126, 18);
+				border-left: 2px solid rgb(18, 126, 18);
+			}
+
+			&.fiction {
+				border-bottom: 3px solid rgb(65, 67, 226);
+				border-left: 2px solid rgb(65, 67, 226);
+			}
+
+			&.opinion {
+				border-bottom: 3px solid rgb(222, 177, 41);
+				border-left: 2px solid rgb(222, 177, 41);
+			}
+
+			&.hobby {
+				border-bottom: 3px solid rgb(244, 101, 18);
+				border-left: 2px solid rgb(244, 101, 18);
+			}
+		}
+	}
+}

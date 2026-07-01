@@ -26,7 +26,8 @@ function spudmagCardBeat($index) {
 		array('tpl' => 'card-under',   'span' => 'span-3'),
 		array('tpl' => 'card-overlay', 'span' => 'span-3'),
 		array('tpl' => 'card-under',   'span' => 'span-3'),
-		array('tpl' => 'card-under',   'span' => 'span-4')
+		array('tpl' => 'card-under',   'span' => 'span-3'),
+		array('tpl' => 'card-overlay', 'span' => 'span-3')
 	);
 	return $rhythm[$index % count($rhythm)];
 }

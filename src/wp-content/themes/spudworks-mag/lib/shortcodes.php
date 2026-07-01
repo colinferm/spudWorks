@@ -225,3 +225,149 @@ function spudmagNoticeShortcode($atts, $content = null) {
 		. '</div>';
 }
 add_shortcode('notice', 'spudmagNoticeShortcode');
+
+/**
+ * [pullquote] — a phrase pulled from the post's own copy, set apart for emphasis.
+ *
+ *   [pullquote align="center|left|right" attribution="Optional"]Quote text[/pullquote]
+ *       align defaults to "center" (a breakout wider than the text column);
+ *       "left"/"right" float the quote so body text wraps around it. attribution,
+ *       when given, appears right-aligned below the quote behind an em dash.
+ */
+function spudmagPullquoteShortcode($atts, $content = null) {
+	if (!is_string($content) || trim($content) === '') {
+		return '';
+	}
+
+	$a = shortcode_atts(array(
+		'align'       => 'center',
+		'attribution' => ''
+	), $atts, 'pullquote');
+
+	$align = in_array($a['align'], array('center', 'left', 'right'), true) ? $a['align'] : 'center';
+	// "center" is the base treatment and carries no extra class.
+	$class = $align === 'center' ? 'pullquote' : 'pullquote ' . $align;
+
+	$body = wpautop(wp_kses_post(do_shortcode(trim($content))));
+
+	$attribution = trim($a['attribution']);
+	$citeHtml = '';
+	if ($attribution !== '') {
+		$citeHtml = '<cite class="pullquote__attribution">&#8212;&#160;' . esc_html($attribution) . '</cite>';
+	}
+
+	return '<div class="' . esc_attr($class) . '">' . $body . $citeHtml . '</div>';
+}
+add_shortcode('pullquote', 'spudmagPullquoteShortcode');
+
+/**
+ * [toc] — an auto-generated table of contents for a long post.
+ *
+ *   [toc]Optional heading text[/toc]
+ *       Drops a right-floated contents box wherever it's placed. The enclosed
+ *       text becomes the box heading (defaults to "Contents"). The list itself is
+ *       built later from the post's H2/H3 headings — see spudmagRenderToc().
+ *
+ * The shortcode only stashes the heading text and leaves a sentinel; the real
+ * work happens in a late the_content filter, where the fully rendered headings
+ * are in hand. That guarantees the ids injected into the headings and the links
+ * in the list are generated in one pass from the same nodes, so they always match.
+ */
+function spudmagTocShortcode($atts, $content = null) {
+	$GLOBALS['spudmag_toc_intro'] = is_string($content) ? trim($content) : '';
+	return '%%SPUDMAG_TOC%%';
+}
+add_shortcode('toc', 'spudmagTocShortcode');
+
+/**
+ * Build the contents box markup from a list of headings collected by
+ * spudmagRenderToc(). Each heading is array('level' => 'h2'|'h3', 'id' => slug,
+ * 'label' => inner HTML). Inline formatting in the label is preserved (matching
+ * the headings) while nested links are stripped so we never nest anchors.
+ */
+function spudmagBuildTocHtml($headings) {
+	$intro = isset($GLOBALS['spudmag_toc_intro']) ? trim((string) $GLOBALS['spudmag_toc_intro']) : '';
+	if ($intro === '') {
+		$intro = __('Contents', 'spudworks-mag');
+	}
+
+	$allowed = array(
+		'em'     => array(),
+		'i'      => array(),
+		'strong' => array(),
+		'b'      => array(),
+		'span'   => array(),
+		'code'   => array()
+	);
+
+	$items = '';
+	foreach ($headings as $h) {
+		$label = wp_kses($h['label'], $allowed);
+		$items .= '<li class="toc__item toc__item--' . esc_attr($h['level']) . '">'
+			. '<a class="toc__link" href="#' . esc_attr($h['id']) . '">' . $label . '</a>'
+			. '</li>';
+	}
+
+	return '<nav class="toc" aria-label="' . esc_attr__('Table of contents', 'spudworks-mag') . '">'
+		. '<p class="toc__title">' . wp_kses_post(do_shortcode($intro)) . '</p>'
+		. '<ul class="toc__list">' . $items . '</ul>'
+		. '</nav>';
+}
+
+/**
+ * Replace the [toc] sentinel with the rendered contents box, injecting matching
+ * id anchors into the post's H2/H3 headings along the way. Runs after both
+ * wpautop (10) and do_shortcode (11) so the headings are final HTML.
+ */
+function spudmagRenderToc($content) {
+	if (strpos($content, '%%SPUDMAG_TOC%%') === false) {
+		return $content;
+	}
+
+	$headings = array();
+	$used = array();
+
+	$content = preg_replace_callback('/<(h[23])\b([^>]*)>(.*?)<\/\1>/is', function ($m) use (&$headings, &$used) {
+		$tag   = strtolower($m[1]);
+		$attrs = $m[2];
+		$inner = $m[3];
+
+		// Honour an existing id; otherwise slugify the heading text and ensure it
+		// is unique within the document.
+		if (preg_match('/\bid=["\']([^"\']+)["\']/i', $attrs, $idMatch)) {
+			$id = $idMatch[1];
+		} else {
+			$base = sanitize_title(wp_strip_all_tags($inner));
+			if ($base === '') {
+				$base = 'section';
+			}
+			$id = $base;
+			$n = 2;
+			while (isset($used[$id])) {
+				$id = $base . '-' . $n;
+				$n++;
+			}
+			$attrs .= ' id="' . esc_attr($id) . '"';
+		}
+
+		$used[$id] = true;
+		$headings[] = array('level' => $tag, 'id' => $id, 'label' => $inner);
+
+		return '<' . $tag . $attrs . '>' . $inner . '</' . $tag . '>';
+	}, $content);
+
+	$toc = empty($headings) ? '' : spudmagBuildTocHtml($headings);
+
+	// Drop the wpautop <p> wrapper around the sentinel so we don't nest a block
+	// box inside a paragraph.
+	$content = str_replace(
+		array('<p>%%SPUDMAG_TOC%%</p>', '%%SPUDMAG_TOC%%'),
+		$toc,
+		$content
+	);
+
+	unset($GLOBALS['spudmag_toc_intro']);
+
+	return $content;
+}
+add_filter('the_content', 'spudmagRenderToc', 99);

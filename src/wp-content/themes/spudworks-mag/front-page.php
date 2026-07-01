@@ -12,13 +12,13 @@
  */
 get_header();
 
-$home = spudmagHomeItems(15);
+$home = spudmagHomeItems(16);
 $pinned = $home['pinned'];
 $items = $home['items'];
 
 // First three items make up the featured strip; the rest fill the varied grid.
 $featured = array_slice($items, 0, 3);
-$grid = array_slice($items, 3, 12);
+$grid = array_slice($items, 3, 13);
 ?>
 
 <section class="home-masthead container">

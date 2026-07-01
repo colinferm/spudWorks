@@ -166,6 +166,20 @@ function spudmagGalleryThumbSizes($attr, $attachment, $size) {
 add_filter('wp_get_attachment_image_attributes', 'spudmagGalleryThumbSizes', 10, 3);
 
 /**
+ * Drop the inline width WordPress bakes into [caption] wrappers. Core sizes the
+ * `.wp-caption` div to the image width + 10px via an inline `style="width:Npx"`;
+ * inside the narrower Showcase content column that fixed pixel width can exceed
+ * the column and force the whole layout to overflow horizontally on mobile.
+ * Returning 0 here suppresses the inline width entirely (it overrides any width
+ * passed by the shortcode), leaving the figure and its image — already capped at
+ * max-width:100% — free to size fluidly to the column.
+ */
+function spudmagCaptionWidth($width, $atts, $content) {
+	return 0;
+}
+add_filter('img_caption_shortcode_width', 'spudmagCaptionWidth', 10, 3);
+
+/**
  * Enqueue the compiled stylesheet and front-end scripts.
  */
 function spudmagAssets() {

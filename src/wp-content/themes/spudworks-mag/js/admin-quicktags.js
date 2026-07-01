@@ -50,4 +50,24 @@
 		'Insert a notice box',
 		203
 	);
+
+	QTags.addButton(
+		'spudmag_pullquote',
+		'pullquote',
+		'[pullquote align="center" attribution=""]',
+		'[/pullquote]',
+		'',
+		'Insert a pullquote',
+		204
+	);
+
+	QTags.addButton(
+		'spudmag_toc',
+		'toc',
+		'[toc]',
+		'[/toc]',
+		'',
+		'Insert a table of contents',
+		205
+	);
 })();

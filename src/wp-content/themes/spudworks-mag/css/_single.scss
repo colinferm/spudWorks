@@ -101,6 +101,15 @@
 		margin-top: 1.8em;
 	}
 
+	// Keep [toc] anchor jumps clear of the sticky header.
+	h2, h3 {
+		scroll-margin-top: 5rem;
+	}
+
+	> p {
+		text-indent: 20px;
+	}
+
 	figure,
 	img {
 		margin-top: 1.6rem;

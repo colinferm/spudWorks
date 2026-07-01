@@ -12,6 +12,16 @@
  * Enqueue admin scripts on the screens that need them.
  */
 function spudmagAdminAssets($hook) {
+	// Theme admin stylesheet, loaded on every admin screen so rules can target
+	// any dashboard or plugin page (e.g. Editorial Calendar). Authored in
+	// css/admin.scss and compiled to css/admin.css by the Gulp task.
+	wp_enqueue_style(
+		'spudmag-admin',
+		THEMEURI . '/css/admin.css',
+		array(),
+		THEMEVERSION
+	);
+
 	// Quicktags buttons: only on the post add/edit screens.
 	if ($hook === 'post.php' || $hook === 'post-new.php') {
 		wp_enqueue_script(
@@ -75,6 +85,20 @@ function spudmagEditorHelpTab() {
 		. '<pre>[notice level="warn"]Heads up — this changes in the next release.[/notice]</pre>'
 		. '<ul>'
 		. '<li><code>level</code> — ' . esc_html__('info, warn, or danger (default info). Sets the icon and accent colour.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[pullquote]</h3>'
+		. '<p>' . esc_html__('Pulls a phrase from your own copy into an oversized callout. By default it is centred and breaks out wider than the text column; align="left" or "right" floats it so the surrounding text wraps alongside (on wide screens — it recentres on smaller ones).', 'spudworks-mag') . '</p>'
+		. '<pre>[pullquote]A line worth shouting about.[/pullquote]
+[pullquote align="right" attribution="Jane Doe"]A line worth shouting about.[/pullquote]</pre>'
+		. '<ul>'
+		. '<li><code>align</code> — ' . esc_html__('center (default), left, or right.', 'spudworks-mag') . '</li>'
+		. '<li><code>attribution</code> — ' . esc_html__('optional; shown right-aligned below the quote behind an em dash.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[toc]</h3>'
+		. '<p>' . esc_html__('Builds a linked table of contents from the post\'s H2 and H3 headings, in a right-floated box the text wraps around (it becomes a full-width inset block on phones). The text between the tags is the box heading; leave it empty to default to "Contents". Place it near the top of the post.', 'spudworks-mag') . '</p>'
+		. '<pre>[toc]In this collection[/toc]</pre>'
+		. '<ul>'
+		. '<li>' . esc_html__('The list is generated automatically; add H2/H3 headings in the post body and they appear as entries (sub-entries for H3), keeping any italics.', 'spudworks-mag') . '</li>'
 		. '</ul>';
 
 	$screen->add_help_tab(array(

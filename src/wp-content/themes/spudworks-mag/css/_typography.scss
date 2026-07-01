@@ -80,20 +80,23 @@ ul, ol {
 	padding-left: 1.3em;
 }
 
-// Pullquote: bold serif, set apart from the column. Blockquotes share the
-// exact same treatment so quoted passages read as pull quotes.
-.pullquote,
+// Blockquote: a passage borrowed from an outside source. A yellow left rule and
+// a faintly raised panel set it apart from the column; the sans face is a notch
+// smaller and tighter than body copy so it reads as quoted, not as a pull quote
+// (those are the serif `.pullquote` callouts styled in _shortcodes.scss).
 blockquote {
-	font-family: $serif;
-	font-weight: $weight-black;
+	font-family: $sans;
+	font-weight: $weight-regular;
 	font-style: normal;
-	font-size: clamp(1.5rem, 3.5vw, 2rem);
-	line-height: 1.2;
-	color: #f6f1e6;
-	margin: 2rem 0;
-	padding: 0.4rem 0;
-	border-top: 4px solid $hazard-yellow;
-	border-bottom: 1px solid $ink-rule;
+	font-size: 1rem;
+	line-height: 1.45;
+	letter-spacing: -0.01em;
+	color: #f3efe6;
+	margin: 1.8rem 0;
+	padding: 0.9rem 1.2rem;
+	background: #1d2026;
+	border-left: 4px solid $hazard-yellow;
+	border-radius: 0 3px 3px 0;
 
 	// A blockquote wraps its text in paragraphs; keep them flush.
 	p {
@@ -107,7 +110,7 @@ blockquote {
 	cite {
 		display: block;
 		margin-top: 0.6rem;
-		font-size: 0.95rem;
+		font-size: 0.9rem;
 		font-weight: $weight-medium;
 		color: $paper-dim;
 	}
