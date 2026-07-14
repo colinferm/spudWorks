@@ -25,7 +25,8 @@ get_header();
 				<?php $beat = spudmagCardBeat($i); ?>
 				<?php get_template_part('templates/' . $beat['tpl'], '', array(
 					'postId'    => get_the_ID(),
-					'spanClass' => $beat['span']
+					'spanClass' => $beat['span'],
+					'showByline' => false
 				)); ?>
 				<?php $i++; ?>
 			<?php endwhile; ?>

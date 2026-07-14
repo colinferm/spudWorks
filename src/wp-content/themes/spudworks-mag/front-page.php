@@ -40,7 +40,7 @@ $grid = array_slice($items, 3, 13);
 	<section class="home-featured container">
 		<div class="featured-grid">
 			<?php foreach ($featured as $featuredPost) : ?>
-				<?php get_template_part('templates/card-featured', '', array('postId' => $featuredPost->ID)); ?>
+				<?php get_template_part('templates/card-featured', '', array('postId' => $featuredPost->ID, 'showByline' => false)); ?>
 			<?php endforeach; ?>
 		</div>
 	</section>
@@ -53,7 +53,8 @@ $grid = array_slice($items, 3, 13);
 				<?php $beat = spudmagCardBeat($index); ?>
 				<?php get_template_part('templates/' . $beat['tpl'], '', array(
 					'postId'    => $gridPost->ID,
-					'spanClass' => $beat['span']
+					'spanClass' => $beat['span'],
+					'showByline' => false
 				)); ?>
 			<?php endforeach; ?>
 		</div>

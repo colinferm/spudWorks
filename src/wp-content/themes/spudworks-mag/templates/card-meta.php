@@ -31,11 +31,11 @@ $permalink = get_permalink($postId);
 		<p class="card-subhead"><?php echo wp_kses_post($subhead); ?></p>
 	<?php endif; ?>
 
-	<?php if ($showByline && spudmagHasByline($postId)) : ?>
-		<p class="card-byline">
+	<p class="card-byline">
+		<?php if ($showByline && spudmagHasByline($postId)) : ?>
 			<span class="card-byline__author"><?php echo esc_html(get_the_author_meta('display_name', get_post_field('post_author', $postId))); ?></span>
 			<span class="card-byline__sep" aria-hidden="true">&middot;</span>
-			<time datetime="<?php echo esc_attr(get_the_date('c', $postId)); ?>"><?php echo esc_html(get_the_date('', $postId)); ?></time>
-		</p>
-	<?php endif; ?>
+		<?php endif; ?>
+		<time datetime="<?php echo esc_attr(get_the_date('c', $postId)); ?>"><?php echo esc_html(get_the_date('', $postId)); ?></time>
+	</p>
 </div>

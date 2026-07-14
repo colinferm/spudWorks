@@ -33,6 +33,24 @@ function spudmagAdminAssets($hook) {
 		);
 	}
 
+	// Per-post To-Do lists: the post editor, the Posts > To Do page, and the
+	// dashboard (where the widget links out). All mutations go through the one
+	// admin-ajax endpoint, so every screen gets the same nonce + ajax URL.
+	if ($hook === 'post.php' || $hook === 'post-new.php'
+		|| $hook === spudmagTodosPageHook() || $hook === 'index.php') {
+		wp_enqueue_script(
+			'spudmag-todos',
+			THEMEURI . '/js/admin-todos.js',
+			array(),
+			THEMEVERSION,
+			true
+		);
+		wp_localize_script('spudmag-todos', 'spudmagTodos', array(
+			'ajaxUrl' => admin_url('admin-ajax.php'),
+			'nonce'   => wp_create_nonce('spudmag_todo')
+		));
+	}
+
 	// Featured Post widget search: the widgets screen and the customizer.
 	if ($hook === 'widgets.php' || $hook === 'customize.php') {
 		wp_enqueue_script(

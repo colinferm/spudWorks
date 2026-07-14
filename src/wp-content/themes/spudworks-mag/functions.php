@@ -23,6 +23,7 @@ define("METAPINNED", "_spudmag_pinned");
 define("METARATING", "_spudmag_rating");
 define("METAREVIEWITEM", "_spudmag_review_item");
 define("METAREVIEWTYPE", "_spudmag_review_type");
+define("METATODOS", "_spudmag_todos");
 
 // Theme directory + URI, resolved per-site so the theme is multisite-safe.
 define("THEMEDIR", get_template_directory());
@@ -39,6 +40,9 @@ require_once THEMEDIR . '/lib/comment-security.php';
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
 	require_once THEMEDIR . '/admin/editor-tools.php';
+	require_once THEMEDIR . '/admin/todos.php';
+	require_once THEMEDIR . '/admin/todos-page.php';
+	require_once THEMEDIR . '/admin/todos-dashboard.php';
 }
 
 /**

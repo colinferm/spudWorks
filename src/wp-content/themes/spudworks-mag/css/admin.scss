@@ -103,3 +103,255 @@
 		}
 	}
 }
+
+// --- Post To-Do lists ------------------------------------------------------
+// Shared list UI (editor meta box + Posts > To Do page) plus the dashboard
+// widget. These sit on wp-admin's light chrome, so the palette stays neutral
+// with the hazard accent used only for focus/hover.
+
+// Priority-tag accents (green / yellow / red) plus the neutral default border.
+$todo-border:    #c3c4c7;
+$todo-prio-low:  #46b450;
+$todo-prio-med:  #dba617;
+$todo-prio-high: #d63638;
+
+// Live "(X/Y)" counter, wherever it appears (meta box title, page headings).
+.spudmag-todo-count {
+	color: #646970;
+	font-weight: $weight-regular;
+}
+
+.spudmag-todos {
+	margin: 0;
+
+	.spudmag-todo {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0;
+		padding: 6px 4px 6px 8px;
+		border-bottom: 1px solid #f0f0f1;
+		border-left: 3px solid $todo-border;
+
+		// A priority tag (highest wins) colors the left border.
+		&.is-prio-low  { border-left-color: $todo-prio-low; }
+		&.is-prio-med  { border-left-color: $todo-prio-med; }
+		&.is-prio-high { border-left-color: $todo-prio-high; }
+
+		&.is-done {
+			opacity: 0.55;
+
+			.spudmag-todo-sentence {
+				text-decoration: line-through;
+			}
+		}
+
+		&.is-dragging {
+			opacity: 0.4;
+			outline: 1px dashed $accent-deep;
+		}
+	}
+
+	.spudmag-todo-handle {
+		cursor: grab;
+		color: #a7aaad;
+		line-height: 1;
+		letter-spacing: -2px;
+		user-select: none;
+	}
+
+	.spudmag-todo-check {
+		flex: 0 0 auto;
+		margin: 0;
+	}
+
+	// Raw-text field (holds the #tags): hidden while locked, shown for editing.
+	.spudmag-todo-text {
+		flex: 1 1 auto;
+		min-width: 0;
+		display: none;
+	}
+
+	// Locked view: the tag-stripped sentence (bold, as the old locked text read)
+	// with the pills collected to the right. Double-click reopens for editing.
+	.spudmag-todo-display {
+		flex: 1 1 auto;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+	}
+
+	.spudmag-todo-sentence {
+		flex: 1 1 auto;
+		min-width: 0;
+		font-weight: $weight-bold;
+		overflow-wrap: anywhere;
+	}
+
+	.spudmag-todo-pills {
+		flex: 0 0 auto;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 4px;
+	}
+
+	.spudmag-todo-pill {
+		padding: 0 8px;
+		border-radius: 10px;
+		background: #e0e0e2;
+		color: #3c434a;
+		font-size: 11px;
+		font-weight: $weight-medium;
+		line-height: 18px;
+		white-space: nowrap;
+
+		&.is-prio-low  { background: $todo-prio-low;  color: #fff; }
+		&.is-prio-med  { background: $todo-prio-med;  color: #1d2327; }
+		&.is-prio-high { background: $todo-prio-high; color: #fff; }
+	}
+
+	// Editing state (set on the row by the JS): reveal the input, hide the view.
+	.spudmag-todo.is-editing {
+		.spudmag-todo-text { display: block; }
+		.spudmag-todo-display { display: none; }
+	}
+
+	.spudmag-todo-remove {
+		flex: 0 0 auto;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #a7aaad;
+		font-size: 20px;
+		line-height: 1;
+		cursor: pointer;
+
+		&:hover,
+		&:focus {
+			color: #d63638;
+		}
+	}
+}
+
+// Borderless "add" affordance, used in both the header and footer positions.
+.spudmag-todo-add {
+	flex: 0 0 auto;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: $accent-deep;
+	font: inherit;
+	font-weight: $weight-medium;
+	cursor: pointer;
+
+	&:hover,
+	&:focus {
+		color: $hazard-yellow;
+		text-decoration: underline;
+	}
+}
+
+// Header layout (To Do page): title left, add button hard right on one line.
+.spudmag-todos-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 6px;
+}
+
+// Footer layout (meta box): add button below the list, right-aligned.
+.spudmag-todos-foot {
+	margin-top: 10px;
+	text-align: right;
+}
+
+// Posts > To Do page: one section per post.
+.spudmag-todos-page {
+	.spudmag-todos-post {
+		margin: 0 0 5px;
+		padding: 12px 16px;
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-left: 4px solid $todo-border;
+
+		// Aggregate accent: the card follows its highest open-item priority.
+		&.is-prio-low  { border-left-color: $todo-prio-low; }
+		&.is-prio-med  { border-left-color: $todo-prio-med; }
+		&.is-prio-high { border-left-color: $todo-prio-high; }
+	}
+
+	.spudmag-todos-post-title {
+		margin: 0;
+		font-size: 15px;
+
+		.spudmag-todos-status {
+			margin-left: 6px;
+			color: #646970;
+			font-size: 12px;
+			font-weight: $weight-regular;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+		}
+	}
+}
+
+// Dashboard widget: grouped like the core Activity widget.
+.spudmag-todos-dash {
+	.spudmag-todos-dash-group {
+		margin: 12px 0 6px;
+		padding-bottom: 4px;
+		color: #646970;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		border-bottom: 1px solid #f0f0f1;
+	}
+
+	.spudmag-todos-dash-list {
+		margin: 0 0 8px;
+	}
+
+	.spudmag-todos-dash-post {
+		margin: 0 0 8px;
+	}
+
+	.spudmag-todos-dash-name {
+		font-weight: $weight-bold;
+		text-decoration: none;
+	}
+
+	.spudmag-todos-dash-tasks {
+		margin: 2px 0 0;
+		padding-left: 0;
+		list-style: disc;
+
+		li {
+			margin: 0;
+			padding-left: 16px;
+			color: #50575e;
+			list-style-type: none;
+			border-left: 3px solid $todo-border;
+			line-height: 20px;
+
+			&.is-prio-low  { border-left-color: $todo-prio-low; }
+			&.is-prio-med  { border-left-color: $todo-prio-med; }
+			&.is-prio-high { border-left-color: $todo-prio-high; }
+		}
+
+		a {
+			color: inherit;
+			text-decoration: none;
+
+			&:hover,
+			&:focus {
+				color: $accent-deep;
+			}
+		}
+	}
+}

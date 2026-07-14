@@ -38,7 +38,7 @@ function spudmagCardBeat($index) {
 function spudmagGetTemplate($postId) {
 	$value = get_post_meta($postId, METATEMPLATE, true);
 	$allowed = array('default', 'fiction', 'showcase');
-	return in_array($value, $allowed, true) ? $value : 'default';
+	return in_array($value, $allowed, true) ? $value : 'showcase';
 }
 
 /**

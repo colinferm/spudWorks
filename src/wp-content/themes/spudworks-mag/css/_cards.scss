@@ -247,7 +247,10 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	height: 100%;
+	// Grow to fill the card so the darkening scrim covers it fully. `height: 100%`
+	// doesn't resolve here (the card only sets min-height, not a definite height),
+	// which left the top of the image uncovered; flex-grow fills it flow-natively.
+	flex: 1;
 	background: rgba(8, 9, 11, 0.32);
 }
 

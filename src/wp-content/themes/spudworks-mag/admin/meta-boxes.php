@@ -38,9 +38,9 @@ function spudmagRenderMetaBox($post) {
 	$reviewType = spudmagGetReviewType($post->ID);
 
 	$templates = array(
-		'default'  => __('Default', 'spudworks-mag'),
+		'showcase' => __('Showcase', 'spudworks-mag'),
 		'fiction'  => __('Fiction', 'spudworks-mag'),
-		'showcase' => __('Showcase', 'spudworks-mag')
+		'default'  => __('No Sidebar', 'spudworks-mag')
 	);
 	?>
 	<p>

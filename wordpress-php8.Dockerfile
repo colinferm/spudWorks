@@ -7,7 +7,7 @@ RUN touch /root/.vimrc && echo 'set nocompatible' >> /root/.vimrc
 # basic environment install.
 RUN apt-get update --allow-releaseinfo-change -qq \
   && apt-get install -y default-mysql-client --no-install-recommends \
-  && apt-get install -y vim-tiny unzip \
+  && apt-get install -y vim-tiny unzip wget \
   && apt-get install -y sudo ca-certificates curl gnupg \
   && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libpng-dev libxml2-dev libzip-dev
 
@@ -85,6 +85,8 @@ RUN curl -fsSLO --compressed "https://wordpress.org/wordpress-${WORDPRESS_VERSIO
   && unzip regenerate-thumbnails.3.1.6.zip -d /var/www/html/wp-content/plugins \
   && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/redis-cache.2.5.4.zip" \
   && unzip redis-cache.2.5.4.zip -d /var/www/html/wp-content/plugins \
+  && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/editorial-calendar.3.9.4.zip" \
+  && unzip editorial-calendar.3.9.4.zip -d /var/www/html/wp-content/plugins \
   && rm *.zip && rm -Rf /var/www/html/wp-content/plugins/akismet && rm /var/www/html/wp-content/plugins/hello.php \
   && rm "/usr/src/spudworks/wordpress-${WORDPRESS_VERSION}.tar.gz"
 

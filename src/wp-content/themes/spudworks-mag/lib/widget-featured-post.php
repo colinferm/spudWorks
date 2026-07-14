@@ -34,9 +34,14 @@ class Spudmag_Featured_Post_Widget extends WP_Widget {
 			echo $args['before_title'] . esc_html($title) . $args['after_title'];
 		}
 
-		get_template_part('templates/card-featured', '', array(
+		// Layout: 'under' (image on top, text beneath — the default) or 'overlay'
+		// (text centered over the image), for a little sidebar differentiation.
+		$layout = (isset($instance['layout']) && $instance['layout'] === 'under') ? 'under' : 'overlay';
+		$template = ($layout == 'under') ? 'templates/card-under' : 'templates/card-overlay';
+
+		get_template_part($template, '', array(
 			'postId'     => $postId,
-			'showByline' => true
+			'showByline' => false
 		));
 
 		echo $args['after_widget'];
@@ -49,6 +54,7 @@ class Spudmag_Featured_Post_Widget extends WP_Widget {
 		$title = isset($instance['title']) ? $instance['title'] : '';
 		$postId = isset($instance['post_id']) ? (int) $instance['post_id'] : 0;
 		$currentLabel = $postId ? get_the_title($postId) : '';
+		$layout = (isset($instance['layout']) && $instance['layout'] === 'overlay') ? 'overlay' : 'under';
 		?>
 		<p>
 			<label for="<?php echo esc_attr($this->get_field_id('title')); ?>"><?php esc_html_e('Title (optional):', 'spudworks-mag'); ?></label>
@@ -56,6 +62,15 @@ class Spudmag_Featured_Post_Widget extends WP_Widget {
 				id="<?php echo esc_attr($this->get_field_id('title')); ?>"
 				name="<?php echo esc_attr($this->get_field_name('title')); ?>"
 				value="<?php echo esc_attr($title); ?>">
+		</p>
+		<p>
+			<label for="<?php echo esc_attr($this->get_field_id('layout')); ?>"><?php esc_html_e('Layout:', 'spudworks-mag'); ?></label>
+			<select class="widefat"
+				id="<?php echo esc_attr($this->get_field_id('layout')); ?>"
+				name="<?php echo esc_attr($this->get_field_name('layout')); ?>">
+				<option value="overlay" <?php selected($layout, 'overlay'); ?>><?php esc_html_e('Overlay — text over the image', 'spudworks-mag'); ?></option>
+				<option value="under" <?php selected($layout, 'under'); ?>><?php esc_html_e('Under — image on top, text beneath', 'spudworks-mag'); ?></option>
+			</select>
 		</p>
 		<div class="spudmag-featured-widget">
 			<p>
@@ -86,6 +101,7 @@ class Spudmag_Featured_Post_Widget extends WP_Widget {
 		$instance = array();
 		$instance['title'] = isset($new_instance['title']) ? sanitize_text_field($new_instance['title']) : '';
 		$instance['post_id'] = isset($new_instance['post_id']) ? (int) $new_instance['post_id'] : 0;
+		$instance['layout'] = (isset($new_instance['layout']) && $new_instance['layout'] === 'overlay') ? 'overlay' : 'under';
 		return $instance;
 	}
 }
