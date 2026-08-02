@@ -238,8 +238,9 @@ $todo-prio-high: #d63638;
 	}
 }
 
-// Borderless "add" affordance, used in both the header and footer positions.
-.spudmag-todo-add {
+// Borderless "add" affordances, used in both the header and footer positions.
+.spudmag-todo-add,
+.spudmag-todo-start {
 	flex: 0 0 auto;
 	padding: 0;
 	border: 0;
@@ -265,10 +266,17 @@ $todo-prio-high: #d63638;
 	margin-bottom: 6px;
 }
 
-// Footer layout (meta box): add button below the list, right-aligned.
+// Footer layout (meta box): the optional "Starting TODOs" link sits left, with
+// the add button pinned hard right whether or not that link is present.
 .spudmag-todos-foot {
+	display: flex;
+	align-items: center;
+	gap: 12px;
 	margin-top: 10px;
-	text-align: right;
+
+	.spudmag-todo-add {
+		margin-left: auto;
+	}
 }
 
 // Posts > To Do page: one section per post.

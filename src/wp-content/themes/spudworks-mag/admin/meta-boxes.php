@@ -36,6 +36,7 @@ function spudmagRenderMetaBox($post) {
 	$rating = spudmagGetRating($post->ID);
 	$reviewItem = spudmagGetReviewItem($post->ID);
 	$reviewType = spudmagGetReviewType($post->ID);
+	$reviewTypes = spudmagReviewTypes();
 
 	$templates = array(
 		'showcase' => __('Showcase', 'spudworks-mag'),
@@ -75,7 +76,7 @@ function spudmagRenderMetaBox($post) {
 	<p>
 		<label for="spudmag-review-type"><strong><?php esc_html_e('Item type', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(for the review snippet)', 'spudworks-mag'); ?></em></label><br>
 		<select name="spudmag_review_type" id="spudmag-review-type" class="widefat">
-			<?php foreach (spudmagReviewTypes() as $value => $label) : ?>
+			<?php foreach ($reviewTypes as $value => $label) : ?>
 				<option value="<?php echo esc_attr($value); ?>" <?php selected($reviewType, $value); ?>>
 					<?php echo esc_html($label); ?>
 				</option>

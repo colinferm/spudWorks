@@ -124,5 +124,21 @@ function spudmagEditorHelpTab() {
 		'title'   => __('spudWorks Shortcodes', 'spudworks-mag'),
 		'content' => $help
 	));
+
+	$separators = '<p>' . esc_html__('A Separator block normally renders as the "sW" hazard divider. For serialised fiction you can swap a single one for an animated gas giant with a moon crossing it.', 'spudworks-mag') . '</p>'
+		. '<h3>' . esc_html__('Orbit separator', 'spudworks-mag') . '</h3>'
+		. '<p>' . esc_html__('Add a Separator block, open Advanced in the block sidebar, and put "orbit" in Additional CSS class(es). In the Text editor, write it directly:', 'spudworks-mag') . '</p>'
+		. '<pre>&lt;hr class="orbit"&gt;</pre>'
+		. '<ul>'
+		. '<li>' . esc_html__('Opt-in per separator — every other <hr> keeps the sW divider, including inside fiction posts.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('Works in any post, not just fiction ones.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('Readers who ask their system for reduced motion get a still version instead.', 'spudworks-mag') . '</li>'
+		. '</ul>';
+
+	$screen->add_help_tab(array(
+		'id'      => 'spudmag-separators',
+		'title'   => __('spudWorks Separators', 'spudworks-mag'),
+		'content' => $separators
+	));
 }
 add_action('current_screen', 'spudmagEditorHelpTab');

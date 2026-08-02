@@ -13,6 +13,12 @@ $hazard-black:  #0a0a0a; // hazard stripe dark band
 $accent:        #ffce26; // links / interactive highlight
 $accent-deep:   #c8990a; // link hover
 
+// Fiction separator only - the moon that crosses the gas giant. The one place
+// in the theme with a cool hue, deliberately, so it reads as "elsewhere".
+$moon-green:     #46bd7c;
+$moon-green-lit: #57cf8b; // sunlit edge of the green face
+$moon-blue:      #2f77b0;
+
 // --- Type ------------------------------------------------------------------
 $sans:  'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
 $serif: 'Fraunces', Georgia, 'Times New Roman', serif;

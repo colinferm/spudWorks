@@ -151,6 +151,23 @@
 		});
 	}
 
+	// Seed the starting checklist, then render the returned list wholesale. The
+	// list was empty (the link only exists while it is), so there is no
+	// in-progress edit state to preserve here.
+	function seedStarting(wrap) {
+		return request({ op: 'seed', post_id: wrap.dataset.postId }).then(function (payload) {
+			if (!payload || !payload.success) {
+				return;
+			}
+			var reorder = wrap.dataset.reorder === '1';
+			var list = wrap.querySelector('.spudmag-todos');
+			list.innerHTML = payload.data.items.map(function (item) {
+				return rowHtml(item, reorder);
+			}).join('');
+			updateCounts(wrap.dataset.postId, payload.data.counts); // also drops the link
+		});
+	}
+
 	// Drop a row and its (empty) item — used when a new/edited row is left blank.
 	function discardRow(wrap, row) {
 		row.remove();
@@ -167,6 +184,17 @@
 		Array.prototype.forEach.call(nodes, function (node) {
 			node.textContent = label;
 		});
+		// The starting-checklist link is a one-shot: the moment the list holds
+		// anything, drop it for the rest of the page view. Removing (rather than
+		// hiding) it means emptying the list later does not bring it back — by
+		// then the author has clearly chosen their own list. A reload re-renders
+		// it server-side only if the list is genuinely still empty.
+		if (counts.total > 0) {
+			var start = document.querySelector('.spudmag-todos-wrap[data-post-id="' + postId + '"] .spudmag-todo-start');
+			if (start) {
+				start.remove();
+			}
+		}
 	}
 
 	function request(params) {
@@ -189,13 +217,22 @@
 		}).then(function (res) { return res.json(); });
 	}
 
-	// Add / remove (event-delegated clicks).
+	// Add / seed / remove (event-delegated clicks).
 	document.addEventListener('click', function (event) {
 		var addBtn = event.target.closest('.spudmag-todo-add');
 		if (addBtn) {
 			var addWrap = wrapOf(addBtn);
 			if (addWrap) {
 				addItem(addWrap);
+			}
+			return;
+		}
+
+		var startBtn = event.target.closest('.spudmag-todo-start');
+		if (startBtn) {
+			var startWrap = wrapOf(startBtn);
+			if (startWrap) {
+				seedStarting(startWrap);
 			}
 			return;
 		}

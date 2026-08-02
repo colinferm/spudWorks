@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.4-apache
 
 USER root
 RUN ln -sf /bin/bash /bin/sh
@@ -72,7 +72,7 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
   && chmod +x wp-cli.phar \
   && mv wp-cli.phar /usr/local/bin/wp
 
-ENV WORDPRESS_VERSION="7.0"
+ENV WORDPRESS_VERSION="7.0.2"
 RUN curl -fsSLO --compressed "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz" \
   && tar -xzf "wordpress-${WORDPRESS_VERSION}.tar.gz" -C /var/www/html --strip-components=1 --no-same-owner \
   && curl -fsSLO --compressed "https://downloads.wordpress.org/plugin/classic-editor.1.7.0.zip" \

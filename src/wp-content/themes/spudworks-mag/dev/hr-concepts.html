@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit rule concepts &mdash; spudWorks Magazine</title>
+
+<!-- The real compiled theme stylesheet: real ink background, real Fraunces /
+     Space Grotesk, real 720px measure. Font src: URLs inside it are relative to
+     the CSS file, so they still resolve from this dev/ subfolder. -->
+<link rel="stylesheet" href="../css/spudworks-mag.css">
+
+<style>
+/* =========================================================================
+   Animated gas-giant separators - concept sketches.
+
+   DEV ONLY. Nothing here is part of the theme yet; once a concept is chosen it
+   gets promoted into css/_orbit.scss. Everything is pure CSS - the only script
+   on this page is the "freeze motion" toggle, which exists to preview the
+   prefers-reduced-motion state on a machine that doesn't have it set.
+
+   Two build styles are demonstrated, flagged per concept:
+
+   [bare hr]      Works on a raw <hr class="..."> straight out of the editor's
+                  Separator block. Budget is exactly three paint layers - the
+                  element's own background, ::before and ::after - and their
+                  order is fixed, so the moon can never truly pass *behind* the
+                  planet. It fades out across the far arc instead, which reads
+                  as occlusion to the eye.
+
+   [needs markup] Uses nested spans, so layers can be stacked freely and the
+                  moon genuinely disappears behind the planet. Shipping one of
+                  these means a small the_content filter expanding the <hr>
+                  server-side; authoring stays <hr class="orbit">.
+   ========================================================================= */
+
+/* --- Shared tokens ------------------------------------------------------ */
+:root {
+	/* Gas giant: deep maroon through rust and ember to the theme's hazard
+	   yellow, so the planet sits inside the existing palette rather than
+	   next to it. */
+	--gg-deep:   #3d0c0b;
+	--gg-rust:   #7d2410;
+	--gg-ember:  #b8500f;
+	--gg-amber:  #dd8a10;
+	--gg-yellow: #f4c20d;
+	--gg-pale:   #ffe08a;
+
+	/* Moon: green and blue, split across its face. Concept 8 shipped, so these
+	   track the $moon-* tokens now in _variables.scss. */
+	--moon-green: #46bd7c;
+	--moon-lit:   #57cf8b;
+	--moon-blue:  #2f77b0;
+
+	--dust: rgba(244, 194, 13, 0.42);
+	--dust-warm: rgba(200, 88, 32, 0.38);
+
+	--cx-planet: 64px;   /* planet diameter */
+	--cx-orbit:  96px;   /* orbit radius */
+	--cx-tilt:   68deg;  /* how edge-on the orbit plane sits */
+	--cx-moon:   11px;
+}
+
+/* --- The planet surface -------------------------------------------------
+   A rotating gas giant does NOT show its latitude bands sliding; the bands
+   stay put and the storm detail *within* them travels. So the sphere is three
+   background layers: static spherical shading on top, a drifting storm texture
+   soft-lit into the middle, and the static latitude bands underneath. Only the
+   storm layer's background-position animates.
+
+   Sizes are in px, not %, because percentage background-position is measured
+   against (box - image) and goes nonlinear once the image is wider than the
+   box - px keeps the loop seamless. */
+.gg-surface {
+	border-radius: 50%;
+	background-image:
+		/* limb darkening + terminator + a soft off-centre highlight */
+		radial-gradient(circle at 34% 28%, rgba(255, 240, 200, 0.30), rgba(255, 210, 120, 0.08) 34%, rgba(0, 0, 0, 0) 58%),
+		radial-gradient(circle at 72% 76%, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.30) 44%, rgba(0, 0, 0, 0) 72%),
+		/* storm texture - drifts */
+		repeating-linear-gradient(
+			99deg,
+			rgba(255, 255, 255, 0.00) 0px,
+			rgba(255, 235, 170, 0.55) 7px,
+			rgba(255, 255, 255, 0.00) 15px,
+			rgba(80, 12, 8, 0.55) 24px,
+			rgba(255, 255, 255, 0.00) 32px
+		),
+		/* latitude bands - static */
+		linear-gradient(
+			180deg,
+			var(--gg-deep) 0%,
+			var(--gg-rust) 12%,
+			var(--gg-amber) 22%,
+			var(--gg-deep) 30%,
+			var(--gg-ember) 42%,
+			var(--gg-yellow) 50%,
+			var(--gg-ember) 57%,
+			var(--gg-rust) 68%,
+			var(--gg-amber) 76%,
+			var(--gg-deep) 88%,
+			var(--gg-rust) 100%
+		);
+	background-size: 100% 100%, 100% 100%, 128px 100%, 100% 100%;
+	background-position: 0 0, 0 0, 0 0, 0 0;
+	background-repeat: no-repeat, no-repeat, repeat-x, no-repeat;
+	background-blend-mode: normal, normal, soft-light, normal;
+	animation: gg-drift 16s linear infinite;
+}
+
+/* One full tile of the storm texture, so the loop has no seam. */
+@keyframes gg-drift {
+	to { background-position: 0 0, 0 0, -128px 0, 0 0; }
+}
+
+/* --- The moon -----------------------------------------------------------
+   Green and blue split across the face, with a small specular. The orbit is a
+   true circle in a plane tilted back by --cx-tilt; the parent supplies
+   perspective, so the far side of the orbit genuinely reads as further away.
+   The trailing counter-rotations keep the moon facing the reader instead of
+   tumbling with its own orbit. */
+.gg-moon {
+	width: var(--cx-moon);
+	height: var(--cx-moon);
+	border-radius: 50%;
+	background-image:
+		radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 46%),
+		linear-gradient(128deg, var(--moon-lit) 0%, var(--moon-green) 62%, var(--moon-blue) 63%, var(--moon-blue) 100%);
+	box-shadow: 0 0 7px rgba(70, 190, 160, 0.45);
+}
+
+/* Counter-clockwise, i.e. against the storm drift. */
+@keyframes gg-orbit {
+	from { transform: rotateX(var(--cx-tilt)) rotate(0deg)    translateX(var(--cx-orbit)) rotate(0deg)    rotateX(calc(-1 * var(--cx-tilt))); }
+	to   { transform: rotateX(var(--cx-tilt)) rotate(-360deg) translateX(var(--cx-orbit)) rotate(360deg)  rotateX(calc(-1 * var(--cx-tilt))); }
+}
+
+/* At angle 0 the moon sits at 3 o'clock and travels toward the viewer first,
+   so 0-50% of the cycle is the near arc and 50-100% is the far arc. It only
+   actually overlaps the planet disc around 75%, hence the narrow fade. */
+@keyframes gg-occlude {
+	0%, 68%   { opacity: 1; }
+	72%, 78%  { opacity: 0; }
+	82%, 100% { opacity: 1; }
+}
+/* The mirror of the above, for the true-occlusion (nested markup) builds:
+   the back copy of the moon is only drawn while it is on the far arc. */
+@keyframes gg-show-back {
+	0%, 49%   { opacity: 0; }
+	51%, 99%  { opacity: 1; }
+	100%      { opacity: 0; }
+}
+@keyframes gg-show-front {
+	0%, 49%   { opacity: 1; }
+	51%, 99%  { opacity: 0; }
+	100%      { opacity: 1; }
+}
+
+/* =========================================================================
+   Base: the bare-<hr> build.
+   The element's own background paints the dust lane; ::before is the planet;
+   ::after is the moon. That is the whole layer budget.
+   ========================================================================= */
+.article-content hr.cx {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 128px;
+	border: 0;
+	margin: 3rem 0;
+	opacity: 1;
+	perspective: 460px;
+
+	/* Dust lane: dissolves at both ends like the existing sW rule, and opens a
+	   gap in the middle for the planet - a plain gradient rather than a mask,
+	   because a mask on the element would clip the pseudo-elements too. */
+	background-image: linear-gradient(
+		90deg,
+		rgba(244, 194, 13, 0) 0%,
+		var(--dust) 26%,
+		var(--dust-warm) 41%,
+		rgba(244, 194, 13, 0) 45%,
+		rgba(244, 194, 13, 0) 55%,
+		var(--dust-warm) 59%,
+		var(--dust) 74%,
+		rgba(244, 194, 13, 0) 100%
+	);
+	background-size: 100% 2px;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+/* Neutralise the theme's sW divider, which would otherwise still be painting
+   its hazard stripe and "sW" through these same two pseudo-elements.
+   `transform: none` is the load-bearing line: the theme centres its stripe with
+   translateY(-50%) and its "sW" with translate(-50%, -50%), and those survive
+   into any rule that doesn't explicitly overwrite them - which silently lifts
+   the planet by half its own diameter. Centring here is done with margins so
+   the transform property stays free for the orbit animation. */
+.article-content hr.cx::before,
+.article-content hr.cx::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	right: auto;
+	transform: none;
+	background: none;
+	-webkit-mask-image: none;
+	mask-image: none;
+	padding: 0;
+	font-size: 0;
+}
+
+.article-content hr.cx::before { /* planet */
+	width: var(--cx-planet);
+	height: var(--cx-planet);
+	margin: calc(-0.5 * var(--cx-planet)) 0 0 calc(-0.5 * var(--cx-planet));
+	box-shadow: 0 0 22px rgba(184, 80, 15, 0.35);
+}
+.article-content hr.cx::after { /* moon */
+	width: var(--cx-moon);
+	height: var(--cx-moon);
+	margin: calc(-0.5 * var(--cx-moon)) 0 0 calc(-0.5 * var(--cx-moon));
+	animation:
+		gg-orbit 13s linear infinite,
+		gg-occlude 13s linear infinite;
+}
+
+/* Pseudo-elements can't take a class, so the shared surface/moon paint rules
+   are duplicated onto them here. Kept adjacent to .gg-surface / .gg-moon so
+   the two never drift apart. */
+.article-content hr.cx::before {
+	background-image:
+		radial-gradient(circle at 34% 28%, rgba(255, 240, 200, 0.30), rgba(255, 210, 120, 0.08) 34%, rgba(0, 0, 0, 0) 58%),
+		radial-gradient(circle at 72% 76%, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.30) 44%, rgba(0, 0, 0, 0) 72%),
+		repeating-linear-gradient(99deg,
+			rgba(255, 255, 255, 0.00) 0px,
+			rgba(255, 235, 170, 0.55) 7px,
+			rgba(255, 255, 255, 0.00) 15px,
+			rgba(80, 12, 8, 0.55) 24px,
+			rgba(255, 255, 255, 0.00) 32px),
+		linear-gradient(180deg,
+			var(--gg-deep) 0%, var(--gg-rust) 12%, var(--gg-amber) 22%,
+			var(--gg-deep) 30%, var(--gg-ember) 42%, var(--gg-yellow) 50%,
+			var(--gg-ember) 57%, var(--gg-rust) 68%, var(--gg-amber) 76%,
+			var(--gg-deep) 88%, var(--gg-rust) 100%);
+	background-size: 100% 100%, 100% 100%, 128px 100%, 100% 100%;
+	background-repeat: no-repeat, no-repeat, repeat-x, no-repeat;
+	background-blend-mode: normal, normal, soft-light, normal;
+	border-radius: 50%;
+	animation: gg-drift 16s linear infinite;
+}
+
+.article-content hr.cx::after {
+	background-image:
+		radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 46%),
+		linear-gradient(128deg, var(--moon-lit) 0%, var(--moon-green) 62%, var(--moon-blue) 63%, var(--moon-blue) 100%);
+	border-radius: 50%;
+	box-shadow: 0 0 7px rgba(70, 190, 160, 0.45);
+}
+
+/* =========================================================================
+   Base: the nested-markup build (true occlusion).
+   ========================================================================= */
+.article-content .cxm {
+	position: relative;
+	height: 128px;
+	margin: 3rem 0;
+	perspective: 460px;
+	/* A perspective-projected disk reports a bounding box far wider than its
+	   own width - the near edge is magnified - and on a phone that box pushed
+	   the whole document 60px wider than the viewport. `clip` contains it
+	   without creating a scroll container the way `hidden` would. */
+	overflow-x: clip;
+}
+.cxm > span {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	display: block;
+}
+.cxm__lane {
+	width: 100%;
+	height: 2px;
+	margin: -1px 0 0 -50%;
+	background-image: linear-gradient(
+		90deg,
+		rgba(244, 194, 13, 0) 0%,
+		var(--dust) 26%,
+		var(--dust-warm) 41%,
+		rgba(244, 194, 13, 0) 45%,
+		rgba(244, 194, 13, 0) 55%,
+		var(--dust-warm) 59%,
+		var(--dust) 74%,
+		rgba(244, 194, 13, 0) 100%
+	);
+}
+.cxm__planet {
+	width: var(--cx-planet);
+	height: var(--cx-planet);
+	margin: calc(-0.5 * var(--cx-planet)) 0 0 calc(-0.5 * var(--cx-planet));
+	box-shadow: 0 0 22px rgba(184, 80, 15, 0.35);
+	/* .gg-surface is applied via the class list in the markup */
+}
+.cxm__moon {
+	margin: calc(-0.5 * var(--cx-moon)) 0 0 calc(-0.5 * var(--cx-moon));
+	animation: gg-orbit 13s linear infinite;
+}
+/* Two copies of the same moon on the same clock, one painted below the planet
+   and one above it; each is only opaque for the half of the orbit it owns. */
+.cxm__moon--back  { animation: gg-orbit 13s linear infinite, gg-show-back  13s linear infinite; }
+.cxm__moon--front { animation: gg-orbit 13s linear infinite, gg-show-front 13s linear infinite; }
+
+/* =========================================================================
+   1. ORBIT CLASSIC  [needs markup]
+   Structural heir to the sW rule: same full-width lane, same dissolve at the
+   ends, planet punching the gap where the "sW" sits today - but the moon
+   genuinely passes behind.
+   ========================================================================= */
+/* (uses the .cxm defaults as-is) */
+
+/* =========================================================================
+   2. ACCRETION  [needs markup]
+   The disk *is* the rule. A tilted ellipse of dust with conic density
+   clumping, turning against the planet, its outer edge feathering away into
+   the column width.
+   ========================================================================= */
+.cx--accretion .cxm__lane { display: none; }
+.cx--accretion {
+	/* Tracks the column so the disk feathers out at the measure's edge on a
+	   phone the same way it does on a desktop. */
+	--disk: min(330px, 64vw);
+}
+.cx--accretion .cxm__disk {
+	width: var(--disk);
+	height: var(--disk);
+	margin: calc(-0.5 * var(--disk)) 0 0 calc(-0.5 * var(--disk));
+	border-radius: 50%;
+	transform: rotateX(76deg);
+	background-image:
+		conic-gradient(
+			from 0deg,
+			rgba(244, 194, 13, 0.00) 0deg,
+			rgba(244, 194, 13, 0.17) 40deg,
+			rgba(200, 88, 32, 0.06) 90deg,
+			rgba(244, 194, 13, 0.19) 150deg,
+			rgba(244, 194, 13, 0.03) 200deg,
+			rgba(221, 138, 16, 0.16) 260deg,
+			rgba(244, 194, 13, 0.05) 310deg,
+			rgba(244, 194, 13, 0.00) 360deg
+		);
+	-webkit-mask-image: radial-gradient(closest-side, transparent 26%, #000 36%, #000 68%, transparent 100%);
+	mask-image: radial-gradient(closest-side, transparent 26%, #000 36%, #000 68%, transparent 100%);
+	animation: gg-disk 26s linear infinite;
+}
+@keyframes gg-disk {
+	from { transform: rotateX(76deg) rotate(0deg); }
+	to   { transform: rotateX(76deg) rotate(360deg); }
+}
+
+/* =========================================================================
+   3. TRANSIT  [bare hr]
+   No disk, no lane. Just the planet turning, and the moon crossing its face
+   with a soft shadow dragged along underneath. The most restrained option.
+   ========================================================================= */
+.article-content hr.cx--transit {
+	background-image: none;
+	--cx-orbit: 78px;
+	--cx-tilt: 82deg;
+}
+/* The moon is always in front here, which is exactly what a transit is - so
+   the occlusion fade is dropped and a shadow rides with it instead. */
+.article-content hr.cx--transit::after {
+	animation: gg-orbit 15s linear infinite;
+	box-shadow:
+		0 0 7px rgba(70, 190, 160, 0.45),
+		2px 3px 0 1px rgba(0, 0, 0, 0.45);
+}
+
+/* =========================================================================
+   4. HAZARD ECLIPSE  [bare hr]
+   Keeps the hazard DNA: the lane arrives as the theme's -45deg stripe and
+   dissolves into loose dust as it nears the planet. For a reader moving
+   between the magazine and the novel.
+   ========================================================================= */
+.article-content hr.cx--hazard {
+	/* The dissolve is painted rather than masked. A mask on the <hr> would clip
+	   its own pseudo-elements - the planet and moon vanish with it - so instead
+	   an ink-coloured gradient is laid *over* the stripe to eat both ends and
+	   open the centre gap. Same trick the sW divider already uses to punch its
+	   own gap, and it only works because the page background is a flat known
+	   colour. */
+	background-image:
+		linear-gradient(
+			90deg,
+			#0e0f12 0%,
+			rgba(14, 15, 18, 0) 22%,
+			rgba(14, 15, 18, 0) 38%,
+			#0e0f12 46%,
+			#0e0f12 54%,
+			rgba(14, 15, 18, 0) 62%,
+			rgba(14, 15, 18, 0) 78%,
+			#0e0f12 100%
+		),
+		repeating-linear-gradient(
+			-45deg,
+			rgba(10, 10, 10, 0.9) 0px,
+			rgba(10, 10, 10, 0.9) 9px,
+			rgba(244, 194, 13, 0.75) 9px,
+			rgba(244, 194, 13, 0.75) 18px
+		);
+	background-size: 100% 5px, 100% 5px;
+	background-position: center, center;
+	background-repeat: no-repeat, no-repeat;
+}
+
+/* =========================================================================
+   5. RING & RULE  [needs markup]
+   Saturn-style tilted ring, with the thin rule passing behind the planet.
+   ========================================================================= */
+.cx--ring .cxm__disk {
+	width: 172px;
+	height: 172px;
+	margin: -86px 0 0 -86px;
+	border-radius: 50%;
+	border: 3px solid rgba(244, 194, 13, 0.32);
+	border-bottom-color: rgba(244, 194, 13, 0.14);
+	transform: rotateX(74deg) rotate(-12deg);
+	animation: gg-ring 30s linear infinite;
+}
+@keyframes gg-ring {
+	from { transform: rotateX(74deg) rotate(0deg); }
+	to   { transform: rotateX(74deg) rotate(360deg); }
+}
+.cx--ring { --cx-orbit: 118px; }
+
+/* =========================================================================
+   6. STARFIELD BAND  [bare hr]
+   Two box-shadow starfields drifting at different speeds for parallax. The
+   quietest concept on the page - almost no colour beyond the planet itself.
+   ========================================================================= */
+.article-content hr.cx--stars {
+	background-image: linear-gradient(
+		90deg,
+		rgba(233, 229, 219, 0) 0%,
+		rgba(233, 229, 219, 0.10) 30%,
+		rgba(233, 229, 219, 0) 46%,
+		rgba(233, 229, 219, 0) 54%,
+		rgba(233, 229, 219, 0.10) 70%,
+		rgba(233, 229, 219, 0) 100%
+	);
+	background-size: 100% 1px;
+	overflow: hidden;
+}
+/* Both starfield layers live on one extra element in the markup, because the
+   bare-hr layer budget is already spent. Kept here as a [bare hr] concept
+   anyway: drop the stars and it still works on a raw <hr>. */
+.cx__stars {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+.cx__stars::before,
+.cx__stars::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 2px;
+	height: 2px;
+	border-radius: 50%;
+	background: transparent;
+}
+.cx__stars::before {
+	box-shadow:
+		40px 22px rgba(233, 229, 219, 0.55), 118px 96px rgba(233, 229, 219, 0.35),
+		206px 40px rgba(233, 229, 219, 0.5),  292px 108px rgba(233, 229, 219, 0.3),
+		352px 18px rgba(233, 229, 219, 0.45), 448px 74px rgba(233, 229, 219, 0.5),
+		528px 34px rgba(233, 229, 219, 0.3),  604px 100px rgba(233, 229, 219, 0.45),
+		676px 56px rgba(233, 229, 219, 0.35), 720px 14px rgba(233, 229, 219, 0.5);
+	animation: gg-stars-a 42s linear infinite;
+}
+.cx__stars::after {
+	box-shadow:
+		78px 62px rgba(233, 229, 219, 0.28), 164px 12px rgba(233, 229, 219, 0.22),
+		248px 84px rgba(233, 229, 219, 0.3),  330px 52px rgba(233, 229, 219, 0.2),
+		412px 112px rgba(233, 229, 219, 0.26), 496px 26px rgba(233, 229, 219, 0.22),
+		572px 90px rgba(233, 229, 219, 0.3),  650px 44px rgba(233, 229, 219, 0.2);
+	animation: gg-stars-b 68s linear infinite;
+}
+@keyframes gg-stars-a { to { transform: translateX(-90px); } }
+@keyframes gg-stars-b { to { transform: translateX(-46px); } }
+
+/* =========================================================================
+   7. TERMINATOR  [bare hr]
+   Lit hard from one side. Nearly the whole disc is in shadow; all the colour
+   lives in the crescent. The moon is a bright bead on a near edge-on orbit.
+   ========================================================================= */
+.article-content hr.cx--terminator {
+	background-image: linear-gradient(
+		90deg,
+		rgba(244, 194, 13, 0) 0%,
+		rgba(244, 194, 13, 0.18) 32%,
+		rgba(244, 194, 13, 0) 46%,
+		rgba(244, 194, 13, 0) 54%,
+		rgba(244, 194, 13, 0.18) 68%,
+		rgba(244, 194, 13, 0) 100%
+	);
+	background-size: 100% 1px;
+	--cx-tilt: 86deg;
+	--cx-orbit: 104px;
+}
+.article-content hr.cx--terminator::before {
+	background-image:
+		/* the shadow eats most of the disc, leaving a crescent on the left */
+		radial-gradient(circle at 96% 46%, rgba(0, 0, 0, 0.96) 44%, rgba(0, 0, 0, 0.7) 62%, rgba(0, 0, 0, 0) 78%),
+		radial-gradient(circle at 12% 40%, rgba(255, 240, 200, 0.4), rgba(255, 200, 100, 0.1) 34%, rgba(0, 0, 0, 0) 60%),
+		repeating-linear-gradient(99deg,
+			rgba(255, 255, 255, 0.00) 0px,
+			rgba(255, 235, 170, 0.5) 7px,
+			rgba(255, 255, 255, 0.00) 15px,
+			rgba(80, 12, 8, 0.5) 24px,
+			rgba(255, 255, 255, 0.00) 32px),
+		linear-gradient(180deg,
+			var(--gg-deep) 0%, var(--gg-rust) 16%, var(--gg-ember) 34%,
+			var(--gg-yellow) 50%, var(--gg-ember) 64%, var(--gg-rust) 82%,
+			var(--gg-deep) 100%);
+	background-size: 100% 100%, 100% 100%, 128px 100%, 100% 100%;
+	background-blend-mode: normal, normal, soft-light, normal;
+	box-shadow: -6px 0 26px rgba(244, 194, 13, 0.22);
+}
+.article-content hr.cx--terminator::after {
+	box-shadow: 0 0 10px rgba(120, 210, 180, 0.7);
+}
+
+/* =========================================================================
+   8. MICRO  [bare hr]
+   The whisper-quiet fallback, in case 128px turns out to be too much once
+   it's sitting in a real chapter. ~72px tall, 28px planet.
+   ========================================================================= */
+.article-content hr.cx--micro {
+	height: 72px;
+	margin: 2.25rem 0;
+	--cx-planet: 28px;
+	--cx-orbit: 54px;
+	--cx-moon: 6px;
+	--cx-tilt: 74deg;
+}
+.article-content hr.cx--micro::before {
+	background-size: 100% 100%, 100% 100%, 56px 100%, 100% 100%;
+	box-shadow: 0 0 12px rgba(184, 80, 15, 0.3);
+	animation: gg-drift-micro 12s linear infinite;
+}
+@keyframes gg-drift-micro {
+	to { background-position: 0 0, 0 0, -56px 0, 0 0; }
+}
+
+/* =========================================================================
+   9. SIGNAL  [bare hr]
+   A slow telemetry ping expanding outward from the planet along the rule
+   line, then fading. Instrumentation rather than astronomy.
+   ========================================================================= */
+.article-content hr.cx--signal {
+	background-image: linear-gradient(
+		90deg,
+		rgba(244, 194, 13, 0) 0%,
+		rgba(244, 194, 13, 0.22) 22%,
+		rgba(244, 194, 13, 0.22) 78%,
+		rgba(244, 194, 13, 0) 100%
+	);
+	background-size: 100% 1px;
+}
+.cx__ping {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 56px;
+	height: 56px;
+	margin: -28px 0 0 -28px;
+	border-radius: 50%;
+	border: 1px solid rgba(244, 194, 13, 0.55);
+	transform: scale(0.7);
+	opacity: 0;
+	/* Capped at 3x (168px) so the outermost ring dies inside the rule's own
+	   vertical margins instead of drawing across the prose. */
+	animation: gg-ping 6s cubic-bezier(0.12, 0.6, 0.3, 1) infinite;
+}
+.cx__ping:nth-of-type(2) { animation-delay: 2s; }
+.cx__ping:nth-of-type(3) { animation-delay: 4s; }
+@keyframes gg-ping {
+	0%        { transform: scale(0.7); opacity: 0; }
+	12%       { opacity: 0.65; }
+	100%      { transform: scale(3);   opacity: 0; }
+}
+
+/* =========================================================================
+   Reduced motion.
+   Every concept freezes into a *composed* pose, not a snap-back to 0deg -
+   plain `animation: none` would fling the transform-positioned moons back to
+   3 o'clock and collapse the tilted disks flat.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+	.article-content hr.cx::before,
+	.article-content hr.cx::after,
+	.cxm__planet, .cxm__moon, .cxm__disk,
+	.cx__stars::before, .cx__stars::after,
+	.cx__ping {
+		animation: none !important;
+	}
+	.article-content hr.cx::after,
+	.cxm__moon {
+		transform: rotateX(var(--cx-tilt)) rotate(-42deg) translateX(var(--cx-orbit)) rotate(42deg) rotateX(calc(-1 * var(--cx-tilt)));
+	}
+	.cxm__moon--back { opacity: 0; }
+	.cx--accretion .cxm__disk { transform: rotateX(76deg) rotate(24deg); }
+	.cx--ring .cxm__disk { transform: rotateX(74deg) rotate(-12deg); }
+	.cx__ping { transform: scale(1.5); opacity: 0.3; }
+	.cx__ping:nth-of-type(2) { transform: scale(2.3); opacity: 0.15; }
+	.cx__ping:nth-of-type(3) { opacity: 0; }
+}
+
+@media print {
+	.article-content hr.cx::before,
+	.article-content hr.cx::after,
+	.cxm__planet, .cxm__moon, .cxm__disk, .cx__ping { animation: none !important; }
+}
+
+/* =========================================================================
+   Dev-page chrome. None of this ships.
+   ========================================================================= */
+.devbar {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 0.75rem 1.25rem;
+	margin-bottom: 2.5rem;
+	background: rgba(14, 15, 18, 0.92);
+	backdrop-filter: blur(8px);
+	border-bottom: 1px solid #25282f;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+	font-size: 0.85rem;
+	color: #a7a59d;
+}
+.devbar strong { color: #f4c20d; font-weight: 700; }
+.devbar button {
+	font: inherit;
+	font-weight: 500;
+	color: #0e0f12;
+	background: #f4c20d;
+	border: 0;
+	border-radius: 3px;
+	padding: 0.4rem 0.9rem;
+	cursor: pointer;
+}
+.devbar button[aria-pressed="true"] { background: #a7a59d; }
+
+.cx-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.6rem;
+	margin: 3.5rem 0 0;
+	padding-top: 1.25rem;
+	border-top: 1px dashed #25282f;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+.cx-label h2 {
+	margin: 0;
+	font-family: 'Space Grotesk', system-ui, sans-serif !important;
+	font-size: 1rem !important;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	text-align: left !important;
+	color: #f3efe6;
+}
+.cx-label .num { color: #f4c20d; }
+.cx-label .badge {
+	font-size: 0.68rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	padding: 0.18rem 0.5rem;
+	border-radius: 2px;
+	border: 1px solid #25282f;
+	color: #a7a59d;
+}
+.cx-label .badge.bare { border-color: rgba(63, 174, 114, 0.5); color: #6fd3a1; }
+.cx-label .badge.markup { border-color: rgba(244, 194, 13, 0.45); color: #f4c20d; }
+.cx-note {
+	margin: 0.35rem 0 0;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+	font-size: 0.86rem;
+	color: #a7a59d;
+	max-width: 56ch;
+}
+
+/* The freeze toggle mirrors the reduced-motion block above. */
+body.freeze .article-content hr.cx::before,
+body.freeze .article-content hr.cx::after,
+body.freeze .cxm__planet,
+body.freeze .cxm__moon,
+body.freeze .cxm__disk,
+body.freeze .cx__stars::before,
+body.freeze .cx__stars::after,
+body.freeze .cx__ping {
+	animation: none !important;
+}
+body.freeze .article-content hr.cx::after,
+body.freeze .cxm__moon {
+	transform: rotateX(var(--cx-tilt)) rotate(-42deg) translateX(var(--cx-orbit)) rotate(42deg) rotateX(calc(-1 * var(--cx-tilt)));
+}
+body.freeze .cxm__moon--back { opacity: 0; }
+body.freeze .cx--accretion .cxm__disk { transform: rotateX(76deg) rotate(24deg); }
+body.freeze .cx--ring .cxm__disk { transform: rotateX(74deg) rotate(-12deg); }
+body.freeze .cx__ping { transform: scale(1.5); opacity: 0.3; }
+body.freeze .cx__ping:nth-of-type(2) { transform: scale(2.3); opacity: 0.15; }
+body.freeze .cx__ping:nth-of-type(3) { opacity: 0; }
+</style>
+</head>
+
+<body class="article--fiction">
+
+<div class="devbar">
+	<strong>Orbit rule concepts</strong>
+	<span>9 candidates, judged at the real 720px measure.</span>
+	<button type="button" id="freeze" aria-pressed="false">Freeze motion</button>
+	<span>&larr; previews the <code>prefers-reduced-motion</code> state</span>
+</div>
+
+<div class="container">
+<div class="article-content measure">
+
+	<div class="cx-label">
+		<h2><span class="num">0.</span> Current sW divider</h2>
+		<span class="badge bare">shipping today</span>
+	</div>
+	<p class="cx-note">The baseline. Every concept below is competing with this for weight and quietness.</p>
+
+	<p>The <em>Kestrel</em> had been falling for eleven days, and Ashe had stopped
+	pretending she could feel it. Somewhere past the forward bulkhead the
+	long-range array kept up its patient clicking, listening to a sky that had
+	nothing left to say.</p>
+
+	<hr>
+
+	<p>The drop took four hours. By the end of it the planet had swallowed the
+	whole forward window, and the ring debris made a sound against the hull like
+	rain on a tin roof — steady, unhurried, faintly domestic.</p>
+
+	<!-- 1 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">1.</span> Orbit Classic</h2>
+		<span class="badge markup">needs markup</span>
+	</div>
+	<p class="cx-note">Structural heir to the sW rule: the same lane, the same dissolve at the ends, the planet punching the gap where the &ldquo;sW&rdquo; sits today. The moon genuinely passes behind.</p>
+
+	<div class="cxm" role="separator" aria-hidden="true">
+		<span class="cxm__lane"></span>
+		<span class="cxm__moon cxm__moon--back gg-moon"></span>
+		<span class="cxm__planet gg-surface"></span>
+		<span class="cxm__moon cxm__moon--front gg-moon"></span>
+	</div>
+
+	<p>She had read the survey notes twice on the way down. Nothing in them
+	mentioned the light. The notes had been written by someone who never came
+	closer than a hundred thousand kilometres, and light is not a thing you can
+	measure from that far out and still be honest about.</p>
+
+	<!-- 2 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">2.</span> Accretion</h2>
+		<span class="badge markup">needs markup</span>
+	</div>
+	<p class="cx-note">The disk <em>is</em> the rule &mdash; a tilted ellipse of dust with density clumping, turning against the planet, feathering out into the column width.</p>
+
+	<div class="cxm cx--accretion" role="separator" aria-hidden="true">
+		<span class="cxm__disk"></span>
+		<span class="cxm__moon cxm__moon--back gg-moon"></span>
+		<span class="cxm__planet gg-surface"></span>
+		<span class="cxm__moon cxm__moon--front gg-moon"></span>
+	</div>
+
+	<p>Rennick met her at the lock with two cups of something hot and the
+	expression of a man who had rehearsed being casual. &ldquo;You'll want to see
+	the trench,&rdquo; he said, which was not a greeting, and handed her the
+	better cup, which was.</p>
+
+	<!-- 3 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">3.</span> Transit</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">No disk, no lane. The planet turns; the moon crosses its face and drags a soft shadow underneath. The most restrained of the nine.</p>
+
+	<hr class="cx cx--transit">
+
+	<p>The trench ran for nine kilometres and it was not a trench. Trenches have
+	sides that fell in. This had sides that had been <em>set down</em>, course by
+	course, by something with a great deal of time and no particular interest in
+	being admired for it.</p>
+
+	<!-- 4 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">4.</span> Hazard Eclipse</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">Keeps the hazard DNA: the lane arrives as the theme's &minus;45&deg; stripe and dissolves into loose dust as it nears the planet. A bridge for readers moving between the magazine and the novel.</p>
+
+	<hr class="cx cx--hazard">
+
+	<p>&ldquo;Dating?&rdquo; she asked. Rennick shook his head. &ldquo;Every method
+	we have gives a different answer and none of them agree to within an order of
+	magnitude. Which is itself an answer, if you're feeling brave.&rdquo;</p>
+
+	<!-- 5 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">5.</span> Ring &amp; Rule</h2>
+		<span class="badge markup">needs markup</span>
+	</div>
+	<p class="cx-note">A Saturn-style tilted ring, with the thin rule running behind the planet and the moon orbiting outside the ring.</p>
+
+	<div class="cxm cx--ring" role="separator" aria-hidden="true">
+		<span class="cxm__lane"></span>
+		<span class="cxm__moon cxm__moon--back gg-moon"></span>
+		<span class="cxm__disk"></span>
+		<span class="cxm__planet gg-surface"></span>
+		<span class="cxm__moon cxm__moon--front gg-moon"></span>
+	</div>
+
+	<p>She was not feeling brave. She was feeling the particular vertigo of
+	standing on a floor someone else had laid, in a room whose ceiling had been
+	the sky for longer than her species had had a word for sky.</p>
+
+	<!-- 6 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">6.</span> Starfield Band</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">Two starfields drifting at different speeds for parallax. Almost no colour beyond the planet itself &mdash; the quietest concept here. (The stars are one optional extra span; without them it runs on a raw <code>&lt;hr&gt;</code>.)</p>
+
+	<div style="position:relative;">
+		<hr class="cx cx--stars">
+		<span class="cx__stars" aria-hidden="true"></span>
+	</div>
+
+	<p>They went down at first light, which on that world meant the moment the
+	gas giant's limb cleared the ridge and the whole trench filled up with a
+	colour Ashe had no name for — somewhere between rust and honey, and moving.</p>
+
+	<!-- 7 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">7.</span> Terminator</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">Lit hard from one side. Most of the disc is in shadow and all the colour lives in the crescent; the moon is a bright bead on a near edge-on orbit.</p>
+
+	<hr class="cx cx--terminator">
+
+	<p>By the fourth day she had stopped writing in the log and started writing
+	in a notebook, which Rennick noticed and did not mention, and which was the
+	closest thing to kindness either of them managed that week.</p>
+
+	<!-- 8 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">8.</span> Micro</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">The whisper-quiet fallback at ~72px, in case 128px turns out to be too much once it's sitting in a real chapter.</p>
+
+	<hr class="cx cx--micro">
+
+	<p>The thing in the trench had been listening for a very long time. It had
+	not, in all that time, heard anything it recognised. Ashe put her palm flat
+	against the stone and felt it decide that this had changed.</p>
+
+	<!-- 9 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">9.</span> Signal</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">A slow telemetry ping expanding outward along the rule line, then fading. Instrumentation rather than astronomy. (Rings are optional extra spans.)</p>
+
+	<div style="position:relative;">
+		<hr class="cx cx--signal">
+		<span class="cx__ping" aria-hidden="true"></span>
+		<span class="cx__ping" aria-hidden="true"></span>
+		<span class="cx__ping" aria-hidden="true"></span>
+	</div>
+
+	<p>Eleven days out, the array stopped clicking. Ashe was asleep when it
+	happened and woke anyway, the way you do when a sound you had stopped
+	noticing finally stops.</p>
+
+	<p style="margin-top:3rem;color:#a7a59d;font-family:'Space Grotesk',system-ui,sans-serif;font-size:0.86rem;">
+	&mdash; end of concepts &mdash;
+	</p>
+
+</div>
+</div>
+
+<script>
+// Dev-page only: mirrors prefers-reduced-motion so the frozen pose can be
+// checked without changing an OS setting.
+document.getElementById('freeze').addEventListener('click', function () {
+	var on = document.body.classList.toggle('freeze');
+	this.setAttribute('aria-pressed', String(on));
+	this.textContent = on ? 'Unfreeze motion' : 'Freeze motion';
+});
+</script>
+
+</body>
+</html>

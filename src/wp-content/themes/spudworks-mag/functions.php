@@ -36,6 +36,7 @@ require_once THEMEDIR . '/lib/shortcodes.php';
 require_once THEMEDIR . '/lib/widget-featured-post.php';
 require_once THEMEDIR . '/lib/comments.php';
 require_once THEMEDIR . '/lib/comment-security.php';
+require_once THEMEDIR . '/lib/calendar-feed.php';
 
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
@@ -43,6 +44,7 @@ if (is_admin()) {
 	require_once THEMEDIR . '/admin/todos.php';
 	require_once THEMEDIR . '/admin/todos-page.php';
 	require_once THEMEDIR . '/admin/todos-dashboard.php';
+	require_once THEMEDIR . '/admin/calendar-settings.php';
 }
 
 /**
@@ -208,3 +210,8 @@ function spudmagAssets() {
 	}
 }
 add_action('wp_enqueue_scripts', 'spudmagAssets');
+
+function spudmagRemoveProtectedPrefix() {
+    return '%s';
+}
+add_filter( 'protected_title_format', 'spudmagRemoveProtectedPrefix' );

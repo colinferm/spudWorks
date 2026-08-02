@@ -10,7 +10,9 @@
  *
  * Every item is an array: id, text, done, added (unix timestamp). Persistence
  * across all three surfaces (meta box, To Do page, dashboard actions) goes
- * through the one wp_ajax_spudmag_todo endpoint, so there is no save_post hook.
+ * through the one wp_ajax_spudmag_todo endpoint; the only write outside it is
+ * spudmagTodoSeedOnCreate(), which seeds the starting checklist onto a post the
+ * first time it is saved.
  */
 
 /**
@@ -151,7 +153,8 @@ function spudmagTodoParseTags($text) {
 function spudmagTodoTopPriority($postId) {
 	$topRank = 0;
 	$priority = '';
-	foreach (spudmagGetTodos($postId) as $item) {
+	$items = spudmagGetTodos($postId);
+	foreach ($items as $item) {
 		if ($item['done']) {
 			continue;
 		}
@@ -218,7 +221,8 @@ function spudmagTodoRemove($postId, $id) {
  */
 function spudmagTodoReorder($postId, $orderedIds) {
 	$byId = array();
-	foreach (spudmagGetTodos($postId) as $item) {
+	$items = spudmagGetTodos($postId);
+	foreach ($items as $item) {
 		$byId[$item['id']] = $item;
 	}
 	$reordered = array();
@@ -233,6 +237,78 @@ function spudmagTodoReorder($postId, $orderedIds) {
 	}
 	return spudmagSaveTodos($postId, $reordered);
 }
+
+/* -------------------------------------------------------------------------
+ * Starting checklist: the tasks every new article begins with. Seeded onto a
+ * post automatically on its first save, or on demand from the editor's
+ * "+ Add Starting TODOs" link.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * The starting to-dos, in row order. Edit this list to change the checklist.
+ * (None carry a priority tag, so they render neutral until one is typed in.)
+ */
+function spudmagTodoStartingItems() {
+	return array(
+		'Write First Draft #writing',
+		'Select Featured Image #photos',
+		'Copy edit #writing #edit',
+		'Select Pullquotes #edit'
+	);
+}
+
+/**
+ * Seed the starting checklist onto a post. Idempotent by design: a post that
+ * already has *any* item is left alone, so the first-save hook can never double
+ * up, nor trample a list the author started by hand before saving.
+ * Returns the resulting list.
+ */
+function spudmagTodoSeedStarting($postId) {
+	$items = spudmagGetTodos($postId);
+	if (!empty($items)) {
+		return $items;
+	}
+	$startingItems = spudmagTodoStartingItems();
+	foreach ($startingItems as $text) {
+		$items = spudmagTodoAdd($postId, $text);
+	}
+	return $items;
+}
+
+/**
+ * Seed the checklist the first time a new post is saved.
+ *
+ * "First save" = the post leaving the auto-draft/new limbo for a real status,
+ * which is the status-transition equivalent of "it had no ID before". This one
+ * hook covers every path that genuinely creates a post — the editor
+ * (auto-draft => draft), the Quick Draft widget and Editorial Calendar
+ * (new => draft) — while leaving abandoned auto-drafts untouched. Quick Edit
+ * never lands here: it only ever edits posts that already exist.
+ *
+ * Only drafts and scheduled posts are seeded; publishing straight from new
+ * means the checklist is moot. Scripted creation is excluded: wp-cli never
+ * satisfies the is_admin() guard this file is loaded behind, and the importer
+ * (which does run in admin) is filtered out explicitly.
+ */
+function spudmagTodoSeedOnCreate($new, $old, $post) {
+	if ($post->post_type !== 'post') {
+		return;
+	}
+	if ($old !== 'auto-draft' && $old !== 'new') {
+		return; // not a first save
+	}
+	if ($new !== 'draft' && $new !== 'future') {
+		return; // straight to publish (or back to auto-draft/trash) — skip
+	}
+	if ((defined('WP_IMPORTING') && WP_IMPORTING) || (defined('WP_CLI') && WP_CLI)) {
+		return;
+	}
+	if (wp_is_post_revision($post->ID) || wp_is_post_autosave($post->ID)) {
+		return;
+	}
+	spudmagTodoSeedStarting($post->ID);
+}
+add_action('transition_post_status', 'spudmagTodoSeedOnCreate', 10, 3);
 
 /* -------------------------------------------------------------------------
  * Shared query: unpublished posts that still have work, in worklist order.
@@ -304,9 +380,13 @@ function spudmagTodoPosts($limit = 0) {
  * $args['header'] (optional, pre-escaped HTML) puts the add button on the same
  * line as that header, aligned right (the To Do page passes the post heading);
  * without it the button sits below the list, right-aligned (the meta box).
+ *
+ * $args['starting'] adds the "+ Add Starting TODOs" link beside the add button,
+ * but only while the list is empty (there is nothing to seed onto a list that
+ * already has items). Only the editor meta box opts in.
  */
 function spudmagTodoRenderList($postId, $args = array()) {
-	$args = array_merge(array('reorder' => false, 'header' => ''), $args);
+	$args = array_merge(array('reorder' => false, 'header' => '', 'starting' => false), $args);
 	$items = spudmagGetTodos($postId);
 
 	ob_start();
@@ -317,6 +397,13 @@ function spudmagTodoRenderList($postId, $args = array()) {
 
 	$addButton = '<button type="button" class="spudmag-todo-add">'
 		. esc_html__('+ Add item', 'spudworks-mag') . '</button>';
+
+	// The JS removes this for good once the list has anything in it, so it can
+	// never sit there offering to seed a list that is no longer empty.
+	$startButton = ($args['starting'] && empty($items))
+		? '<button type="button" class="spudmag-todo-start">'
+			. esc_html__('+ Add Starting TODOs', 'spudworks-mag') . '</button>'
+		: '';
 	?>
 	<div class="spudmag-todos-wrap" data-post-id="<?php echo esc_attr($postId); ?>" data-reorder="<?php echo $args['reorder'] ? '1' : '0'; ?>">
 		<?php if ($args['header'] !== '') : ?>
@@ -327,7 +414,7 @@ function spudmagTodoRenderList($postId, $args = array()) {
 			<ul class="spudmag-todos"><?php echo $rows; ?></ul>
 		<?php else : ?>
 			<ul class="spudmag-todos"><?php echo $rows; ?></ul>
-			<div class="spudmag-todos-foot"><?php echo $addButton; ?></div>
+			<div class="spudmag-todos-foot"><?php echo $startButton . $addButton; ?></div>
 		<?php endif; ?>
 	</div>
 	<?php
@@ -409,7 +496,7 @@ add_action('add_meta_boxes', 'spudmagTodosMetaBox', 10, 2);
  * Meta box body: the reusable list with drag-to-reorder enabled.
  */
 function spudmagTodosRenderMetaBox($post) {
-	spudmagTodoRenderList($post->ID, array('reorder' => true));
+	spudmagTodoRenderList($post->ID, array('reorder' => true, 'starting' => true));
 }
 
 /* -------------------------------------------------------------------------
@@ -432,6 +519,9 @@ function spudmagTodoAjax() {
 		case 'add':
 			$text = isset($_POST['text']) ? sanitize_text_field(wp_unslash($_POST['text'])) : '';
 			spudmagTodoAdd($postId, $text);
+			break;
+		case 'seed':
+			spudmagTodoSeedStarting($postId);
 			break;
 		case 'toggle':
 			spudmagTodoToggle($postId, $id, !empty($_POST['done']));
