@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URS rocket-rule concepts &mdash; spudWorks Magazine</title>
+
+<!-- The real compiled theme stylesheet: real ink background, real Fraunces /
+     Space Grotesk, real 720px measure. Font src: URLs inside it are relative to
+     the CSS file, so they still resolve from this dev/ subfolder. -->
+<link rel="stylesheet" href="../css/spudworks-mag.css">
+
+<style>
+/* =========================================================================
+   URS separator concepts - a rocket streaking past "URS" (or the full
+   "Unified Republic of Stars") on a 45deg diagonal, over a starfield that
+   fades from a blue glow at centre out to bare space at the edges.
+
+   DEV ONLY. Nothing here is part of the theme yet; once a concept is chosen it
+   gets promoted into its own css/_*.scss partial, same as _orbit.scss was.
+
+   THE CASCADE TRAP (learned building the gas-giant orbit rule, repeats here):
+   .article-content hr (the sW divider, _hazard.scss) already paints through
+   ::before/::after with a mask-image and a translateY(-50%)/translate(-50%,-50%)
+   centring transform. Any new hr.* class still gets matched by that bare
+   ".article-content hr" selector, so its ::before/::after inherit those
+   properties by default unless explicitly reset. Every concept below resets
+   content/background/mask-image/transform on both pseudo-elements first.
+
+   LAYER BUDGET: a Gutenberg Separator block emits a bare <hr>, so there are
+   three paintable layers - the element's own background, ::before, ::after -
+   in a fixed paint order. Stars + the blue glow are baked as extra
+   radial-gradient() layers inside the element's own background-image (many
+   gradients, still one "layer" in the budget sense), which leaves ::before
+   free for the "URS" label and ::after free for the rocket. That covers 4 of
+   5 concepts on a bare <hr>; the twin-pass concept needs a real wrapper +
+   nested spans to run two independent rocket animations at once, flagged
+   accordingly.
+   ========================================================================= */
+
+:root {
+	/* The theme's one other permitted cool hue is the orbit rule's moon
+	   (green/blue). This is a second, distinct "elsewhere": a saturated blue
+	   glow instead of the gas giant's ember palette, so URS reads as its own
+	   story-world rather than a reskin. */
+	--urs-blue:        #3a6fd8;
+	--urs-blue-deep:   #16224a;
+	--urs-blue-bright: #9fc7ff;
+	--urs-white:       #f4f8ff;
+	--urs-text:        #dce9ff;
+
+	--ux-planet: 0; /* unused, keeps this block symmetric with hr-concepts.html */
+	--ux-rocket-w: 11px;
+	--ux-rocket-h: 46px;
+	/* Equal on purpose: the rocket's nose is fixed at rotate(45deg) (see the
+	   ::after comment below), so the travel vector has to be a true 45deg line
+	   too - equal parts horizontal and vertical - or the shape reads as
+	   sliding sideways instead of flying nose-first. An earlier draft had
+	   168px/44px here, which is roughly a 15deg path under a 45deg-pointed
+	   rocket; this is the bug that produced the "flying sideways" look. */
+	--ux-travel-x: 140px;
+	--ux-travel-y: 140px;
+}
+
+/* --- Shared starfield ----------------------------------------------------
+   One radial blue glow at centre, plus ~16 hand-placed star points whose
+   size and alpha both fall off with distance from centre - literally "white
+   stars over blue, fading as they go further out," baked straight into the
+   background-image list so it costs nothing against the 3-layer budget.
+
+   Written twice on purpose: once baked directly into the base .article-content
+   hr.ux rule below (for the four <hr>-based concepts), and again as the
+   standalone .ux-field class the Twin Pass concept's <div> wrapper uses. A
+   shared class alone isn't enough for the <hr> cases - see the specificity
+   note on the base rule just below - so duplicating the identical gradient
+   list is simpler than fighting the cascade for a one-off page. Kept
+   adjacent so the two copies don't drift apart. */
+.ux-field,
+.article-content hr.ux {
+	background-image:
+		/* Vignette, painted as ink-colour-fading-to-transparent overlays rather
+		   than a mask: since the lane always sits on the flat $ink page
+		   background, fading TO that same solid colour reads identically to a
+		   true mask without needing mask-composite's browser-prefix mess.
+		   Listed first so they paint on top of the glow/stars beneath.
+
+		   Vertical: deliberately generous (34% fade zone top and bottom, only
+		   a 32%-tall solid band survives in the middle) so the lane dissolves
+		   into the surrounding prose rather than stopping at a hard edge. */
+		linear-gradient(to bottom, #0e0f12 0%, rgba(14, 15, 18, 0) 34%, rgba(14, 15, 18, 0) 66%, #0e0f12 100%),
+		/* Horizontal: a much lighter touch (10% each side) - the starfield
+		   should stay visible across most of the width so the rocket has
+		   something to fly over on its way to the edges. */
+		linear-gradient(to right, #0e0f12 0%, rgba(14, 15, 18, 0) 10%, rgba(14, 15, 18, 0) 90%, #0e0f12 100%),
+		/* centre glow */
+		radial-gradient(circle at 50% 50%, rgba(58, 111, 216, 0.38) 0%, rgba(42, 84, 172, 0.20) 32%, rgba(26, 52, 110, 0.08) 58%, rgba(26, 52, 110, 0) 78%),
+		/* near-centre, brightest */
+		radial-gradient(circle 1.6px at 44% 42%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.4px at 57% 60%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.5px at 52% 34%, rgba(255, 255, 255, 0.9) 60%, transparent 100%),
+		/* mid distance */
+		radial-gradient(circle 1.2px at 30% 35%, rgba(255, 255, 255, 0.6) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 68% 66%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+		radial-gradient(circle 1.2px at 40% 72%, rgba(255, 255, 255, 0.5) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 63% 28%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 22% 55%, rgba(255, 255, 255, 0.45) 55%, transparent 100%),
+		/* far, dimmest */
+		radial-gradient(circle 1px at 12% 25%, rgba(255, 255, 255, 0.26) 55%, transparent 100%),
+		radial-gradient(circle 1px at 88% 75%, rgba(255, 255, 255, 0.22) 55%, transparent 100%),
+		radial-gradient(circle 1px at 18% 82%, rgba(255, 255, 255, 0.24) 55%, transparent 100%),
+		radial-gradient(circle 1px at 83% 20%, rgba(255, 255, 255, 0.26) 55%, transparent 100%),
+		radial-gradient(circle 0.8px at 6% 55%, rgba(255, 255, 255, 0.18) 55%, transparent 100%),
+		radial-gradient(circle 0.8px at 95% 46%, rgba(255, 255, 255, 0.2) 55%, transparent 100%),
+		radial-gradient(circle 0.9px at 27% 8%, rgba(255, 255, 255, 0.28) 55%, transparent 100%),
+		radial-gradient(circle 0.9px at 74% 92%, rgba(255, 255, 255, 0.26) 55%, transparent 100%);
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+}
+
+/* --- Base: the bare-<hr> build -------------------------------------------
+   SPECIFICITY NOTE, learned the hard way while building this very page: every
+   override below for a specific concept (.ux--streak, .ux--full, .ux--micro,
+   .ux--hud) must be written as ".article-content hr.ux.ux--name..." - the
+   FULL compound selector this base rule uses - not just ".ux--name.ux...".
+   Two classes still loses to two-classes-plus-a-type-selector: this base rule
+   is (.article-content + .ux, hr) i.e. specificity (0,2,1) on the element and
+   (0,2,2) on ::before/::after, so a shorter override selector without the
+   ".article-content hr" prefix is LESS specific than this base rule and
+   silently loses to it, even though it's written later in the file and adds
+   a modifier class. First symptom: concept 2 rendered "URS" instead of the
+   full Republic name because its override lost this exact fight. */
+.article-content hr.ux {
+	position: relative;
+	display: block;
+	width: 100%;
+	/* 128px -> 156px: a true 45deg path that also reaches further left/right
+	   needs proportionally more vertical room (equal parts, per the
+	   --ux-travel-* comment above) - this is that room, plus a bit more space
+	   for the now-gentler vertical vignette to fade through. */
+	height: 156px;
+	border: 0;
+	margin: 3rem 0;
+	opacity: 1;
+	overflow: hidden; /* contains the rocket's diagonal excursion to this box;
+	                     does not clip this element's own background or its
+	                     box-shadow, only descendants/replaced content */
+}
+
+.article-content hr.ux::before,
+.article-content hr.ux::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	right: auto;
+	transform: none;
+	background: none;
+	-webkit-mask-image: none;
+	mask-image: none;
+	padding: 0;
+	font-size: 0;
+	border-radius: 0;
+}
+
+/* The "URS" HUD label. Small-caps mono, tracked wide, a hairline frame top
+   and bottom like a telemetry readout rather than the magazine's editorial
+   serif - this is the one place the theme currently sounds like a spacecraft
+   instead of a magazine, deliberately. */
+.article-content hr.ux::before {
+	content: "URS";
+	transform: translate(-50%, -50%);
+	font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: 0.38em;
+	text-indent: 0.38em; /* re-centres the optical weight the trailing tracking adds */
+	text-transform: uppercase;
+	color: var(--urs-text);
+	white-space: nowrap;
+	padding: 0.4em 0 0.5em;
+	border-top: 1px solid rgba(159, 199, 255, 0.4);
+	border-bottom: 1px solid rgba(159, 199, 255, 0.4);
+}
+
+/* The rocket: one clip-path spindle, nose bright and tail fading to
+   transparent, oriented "north" at rest. rotate(45deg) is the trailing
+   (innermost-applied) function so it only spins the shape in place; the
+   animated translate() is the leading (outermost) function, so it moves the
+   shape in real screen-space pixels along a true 45deg line rather than
+   along the shape's own rotated axis. */
+.article-content hr.ux::after {
+	width: var(--ux-rocket-w);
+	height: var(--ux-rocket-h);
+	margin: calc(-0.5 * var(--ux-rocket-h)) 0 0 calc(-0.5 * var(--ux-rocket-w));
+	clip-path: polygon(50% 0%, 66% 24%, 60% 82%, 50% 100%, 40% 82%, 34% 24%);
+	background-image: linear-gradient(
+		to top,
+		rgba(159, 199, 255, 0) 0%,
+		rgba(159, 199, 255, 0.55) 25%,
+		#cfe6ff 68%,
+		var(--urs-white) 100%
+	);
+	filter: drop-shadow(0 0 5px rgba(159, 199, 255, 0.65));
+	animation: ux-streak 7s ease-in-out infinite;
+}
+
+@keyframes ux-streak {
+	0%   { transform: translate(calc(-1 * var(--ux-travel-x)), var(--ux-travel-y)) rotate(45deg); opacity: 0; }
+	/* Widened from 10%/90% to 25%/75%: a slower, gentler fade in and out,
+	   roughly matching the pace of the background vignette it's flying
+	   through rather than snapping to full opacity almost immediately. */
+	25%  { opacity: 1; }
+	50%  { transform: translate(0, 0) rotate(45deg); }
+	75%  { opacity: 1; }
+	100% { transform: translate(var(--ux-travel-x), calc(-1 * var(--ux-travel-y))) rotate(45deg); opacity: 0; }
+}
+
+/* =========================================================================
+   1. DIAGONAL STREAK  [bare hr]
+   The baseline reading of the brief: starfield, "URS", one rocket passing
+   bottom-left to top-right. Small fin hints (two soft wedges at the spindle's
+   base) nudge it from "abstract comet" toward "small craft."
+   ========================================================================= */
+.article-content hr.ux.ux--streak::after {
+	background-image:
+		linear-gradient(100deg, rgba(159, 199, 255, 0) 40%, rgba(159, 199, 255, 0.5) 46%, rgba(159, 199, 255, 0) 52%),
+		linear-gradient(80deg, rgba(159, 199, 255, 0) 40%, rgba(159, 199, 255, 0.5) 46%, rgba(159, 199, 255, 0) 52%),
+		linear-gradient(
+			to top,
+			rgba(159, 199, 255, 0) 0%,
+			rgba(159, 199, 255, 0.55) 25%,
+			#cfe6ff 68%,
+			var(--urs-white) 100%
+		);
+}
+
+/* =========================================================================
+   2. FULL REPUBLIC NAME  [bare hr]
+   Same mechanics, but the label spells out "Unified Republic of Stars" in
+   place of the initialism. Sized with clamp() so it stays one line down to a
+   phone-width column; only wraps under real duress.
+   ========================================================================= */
+.article-content hr.ux.ux--full::before {
+	content: "Unified Republic of Stars";
+	font-size: clamp(0.56rem, 2.5vw, 0.72rem);
+	letter-spacing: 0.22em;
+	text-indent: 0.22em;
+	white-space: normal;
+	max-width: 88%;
+	text-align: center;
+}
+
+/* =========================================================================
+   3. TWIN PASS  [needs markup]
+   Two rockets on independent clocks, crossing in an X - the busier, more
+   "space-battle" option. Exceeds the bare-hr layer budget (label + 2 rockets
+   = 3 moving parts, only 2 pseudo-elements available), so this one wraps in
+   a real element with two nested spans.
+   ========================================================================= */
+.uxm {
+	position: relative;
+	height: 156px; /* matches the base .article-content hr.ux - see its comment */
+	margin: 3rem 0;
+	overflow: hidden;
+}
+.uxm > span {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+}
+.uxm__label {
+	transform: translate(-50%, -50%);
+	font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: 0.38em;
+	text-indent: 0.38em;
+	text-transform: uppercase;
+	color: var(--urs-text);
+	white-space: nowrap;
+	padding: 0.4em 0 0.5em;
+	border-top: 1px solid rgba(159, 199, 255, 0.4);
+	border-bottom: 1px solid rgba(159, 199, 255, 0.4);
+}
+.uxm__rocket {
+	width: var(--ux-rocket-w);
+	height: var(--ux-rocket-h);
+	margin: calc(-0.5 * var(--ux-rocket-h)) 0 0 calc(-0.5 * var(--ux-rocket-w));
+	clip-path: polygon(50% 0%, 66% 24%, 60% 82%, 50% 100%, 40% 82%, 34% 24%);
+	background-image: linear-gradient(
+		to top,
+		rgba(159, 199, 255, 0) 0%,
+		rgba(159, 199, 255, 0.55) 25%,
+		#cfe6ff 68%,
+		var(--urs-white) 100%
+	);
+	filter: drop-shadow(0 0 5px rgba(159, 199, 255, 0.65));
+}
+.uxm__rocket--a {
+	animation: ux-streak 7s ease-in-out infinite;
+}
+.uxm__rocket--b {
+	/* mirrored diagonal (top-left to bottom-right) on a slower, offset clock
+	   so the two passes don't always cross at dead centre. */
+	animation: ux-streak-b 8.5s ease-in-out infinite;
+	animation-delay: -2.3s;
+}
+@keyframes ux-streak-b {
+	0%   { transform: translate(calc(-1 * var(--ux-travel-x)), calc(-1 * var(--ux-travel-y))) rotate(-45deg); opacity: 0; }
+	25%  { opacity: 1; }
+	50%  { transform: translate(0, 0) rotate(-45deg); }
+	75%  { opacity: 1; }
+	100% { transform: translate(var(--ux-travel-x), var(--ux-travel-y)) rotate(-45deg); opacity: 0; }
+}
+
+/* =========================================================================
+   4. MICRO  [bare hr]
+   The restrained fallback, matching the gas-giant rule's own "Micro" concept:
+   smaller box, slower single pass, quieter glow - in case the full-size
+   version reads as too much once it's sitting between real paragraphs.
+   ========================================================================= */
+.article-content hr.ux.ux--micro {
+	height: 76px;
+	margin: 2.25rem 0;
+	--ux-rocket-w: 8px;
+	--ux-rocket-h: 32px;
+	/* Equal, same reasoning as the shared --ux-travel-* comment - Micro
+	   inherited the same sideways-flight bug at a smaller scale. */
+	--ux-travel-x: 70px;
+	--ux-travel-y: 70px;
+}
+.article-content hr.ux.ux--micro::before {
+	font-size: 0.68rem;
+	letter-spacing: 0.32em;
+	text-indent: 0.32em;
+}
+.article-content hr.ux.ux--micro::after {
+	animation-duration: 9s;
+}
+
+/* =========================================================================
+   5. HUD RETICLE  [bare hr]
+   The instrumentation-panel reading: thin corner brackets frame the whole
+   lane like a targeting display, baked into the same background-image list
+   as the starfield (still one layer). The rocket crosses through the frame.
+   ========================================================================= */
+.article-content hr.ux.ux--hud {
+	background-image:
+		/* corner brackets, four L-shapes via short linear-gradients pinned to
+		   each edge */
+		linear-gradient(90deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 22px, transparent 22px),
+		linear-gradient(180deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 14px, transparent 14px),
+		linear-gradient(270deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 22px, transparent 22px),
+		linear-gradient(180deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 14px, transparent 14px),
+		linear-gradient(90deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 22px, transparent 22px),
+		linear-gradient(0deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 14px, transparent 14px),
+		linear-gradient(270deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 22px, transparent 22px),
+		linear-gradient(0deg, rgba(159, 199, 255, 0.55) 0, rgba(159, 199, 255, 0.55) 14px, transparent 14px),
+		radial-gradient(circle at 50% 50%, rgba(58, 111, 216, 0.38) 0%, rgba(42, 84, 172, 0.20) 32%, rgba(26, 52, 110, 0.08) 58%, rgba(26, 52, 110, 0) 78%),
+		radial-gradient(circle 1.6px at 44% 42%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.4px at 57% 60%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.2px at 30% 35%, rgba(255, 255, 255, 0.6) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 68% 66%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+		radial-gradient(circle 1px at 12% 25%, rgba(255, 255, 255, 0.26) 55%, transparent 100%),
+		radial-gradient(circle 1px at 88% 75%, rgba(255, 255, 255, 0.22) 55%, transparent 100%);
+	background-repeat:
+		no-repeat, no-repeat, no-repeat, no-repeat,
+		no-repeat, no-repeat, no-repeat, no-repeat,
+		no-repeat, no-repeat, no-repeat, no-repeat,
+		no-repeat, no-repeat, no-repeat;
+	background-position:
+		top left, top left, top right, top right,
+		bottom right, bottom right, bottom left, bottom left,
+		center, center, center, center, center, center, center;
+	background-size:
+		22px 2px, 2px 14px, 22px 2px, 2px 14px,
+		22px 2px, 2px 14px, 22px 2px, 2px 14px,
+		100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+.article-content hr.ux.ux--hud::before {
+	border: 0; /* the reticle frame replaces the label's own hairline rule */
+}
+
+/* =========================================================================
+   Reduced motion. Freeze into a composed pose - not bare `animation: none`,
+   which would snap every rocket back to keyframe 0% (off-frame, opacity 0).
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+	.article-content hr.ux::after,
+	.uxm__rocket {
+		animation: none !important;
+		opacity: 1 !important;
+	}
+	.article-content hr.ux::after {
+		transform: translate(calc(-0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(45deg) !important;
+	}
+	.uxm__rocket--a {
+		transform: translate(calc(-0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(45deg) !important;
+	}
+	.uxm__rocket--b {
+		transform: translate(calc(0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(-45deg) !important;
+	}
+}
+
+@media print {
+	.article-content hr.ux::after,
+	.uxm__rocket {
+		animation: none !important;
+	}
+}
+
+/* =========================================================================
+   Dev-page chrome. None of this ships.
+   ========================================================================= */
+.devbar {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 0.75rem 1.25rem;
+	margin-bottom: 2.5rem;
+	background: rgba(14, 15, 18, 0.92);
+	backdrop-filter: blur(8px);
+	border-bottom: 1px solid #25282f;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+	font-size: 0.85rem;
+	color: #a7a59d;
+}
+.devbar strong { color: #9fc7ff; font-weight: 700; }
+.devbar button {
+	font: inherit;
+	font-weight: 500;
+	color: #0e0f12;
+	background: #9fc7ff;
+	border: 0;
+	border-radius: 3px;
+	padding: 0.4rem 0.9rem;
+	cursor: pointer;
+}
+.devbar button[aria-pressed="true"] { background: #a7a59d; }
+
+.cx-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.6rem;
+	margin: 3.5rem 0 0;
+	padding-top: 1.25rem;
+	border-top: 1px dashed #25282f;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+.cx-label h2 {
+	margin: 0;
+	font-family: 'Space Grotesk', system-ui, sans-serif !important;
+	font-size: 1rem !important;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	text-align: left !important;
+	color: #f3efe6;
+}
+.cx-label .num { color: #9fc7ff; }
+.cx-label .badge {
+	font-size: 0.68rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	padding: 0.18rem 0.5rem;
+	border-radius: 2px;
+	border: 1px solid #25282f;
+	color: #a7a59d;
+}
+.cx-label .badge.bare { border-color: rgba(63, 174, 114, 0.5); color: #6fd3a1; }
+.cx-label .badge.markup { border-color: rgba(159, 199, 255, 0.45); color: #9fc7ff; }
+.cx-note {
+	margin: 0.35rem 0 0;
+	font-family: 'Space Grotesk', system-ui, sans-serif;
+	font-size: 0.86rem;
+	color: #a7a59d;
+	max-width: 56ch;
+}
+
+/* The freeze toggle mirrors the reduced-motion block above. */
+body.freeze .article-content hr.ux::after,
+body.freeze .uxm__rocket {
+	animation: none !important;
+	opacity: 1 !important;
+}
+body.freeze .article-content hr.ux::after {
+	transform: translate(calc(-0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(45deg) !important;
+}
+body.freeze .uxm__rocket--a {
+	transform: translate(calc(-0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(45deg) !important;
+}
+body.freeze .uxm__rocket--b {
+	transform: translate(calc(0.35 * var(--ux-travel-x)), calc(0.35 * var(--ux-travel-y))) rotate(-45deg) !important;
+}
+</style>
+</head>
+
+<body class="article--fiction">
+
+<div class="devbar">
+	<strong>URS rocket-rule concepts</strong>
+	<span>5 candidates, judged at the real 720px measure.</span>
+	<button type="button" id="freeze" aria-pressed="false">Freeze motion</button>
+	<span>&larr; previews the <code>prefers-reduced-motion</code> state</span>
+</div>
+
+<div class="container">
+<div class="article-content measure">
+
+	<div class="cx-label">
+		<h2><span class="num">0.</span> Current sW divider</h2>
+		<span class="badge bare">shipping today</span>
+	</div>
+	<p class="cx-note">The baseline every URS concept below is competing with for weight and quietness. The gas-giant orbit rule (shipped for the other serial) sits a step further along the same spectrum.</p>
+
+	<p>The charter fleet had crossed eleven parsecs of Republic space without
+	incident, which Corvin had come to distrust more than any single alarm. Peace
+	this consistent was either very good luck or a pattern nobody had spotted yet.</p>
+
+	<hr>
+
+	<p>The relay station answered on the third hail, its voice thin with distance
+	and the particular formality the Republic Navy trained into everyone who
+	worked the frontier boards.</p>
+
+	<!-- 1 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">1.</span> Diagonal Streak</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">The baseline reading: starfield, "URS" in a tracked HUD mono, one rocket passing bottom-left to top-right. Small fin hints at the spindle's base.</p>
+
+	<hr class="ux ux--streak">
+
+	<p>Corvin had flown escort for the Republic long enough to know that a quiet
+	sector and an empty one were not the same thing, and that the difference
+	usually announced itself at the worst possible time.</p>
+
+	<!-- 2 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">2.</span> Full Republic Name</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">Same mechanics, spelled out: "Unified Republic of Stars" in place of the initialism, per your interest in seeing the full name work.</p>
+
+	<hr class="ux ux--full">
+
+	<p>She logged the hail, logged the silence that followed it, and told
+	herself - not for the first time this tour - that the Republic paid her to
+	notice exactly this kind of nothing.</p>
+
+	<!-- 3 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">3.</span> Twin Pass</h2>
+		<span class="badge markup">needs markup</span>
+	</div>
+	<p class="cx-note">Two rockets crossing in an X on independent, offset clocks - a busier, more "space-battle" read. Exceeds the bare-hr budget (label + 2 rockets), so this one wraps in a real element.</p>
+
+	<div class="uxm ux-field" role="separator" aria-hidden="true">
+		<span class="uxm__label">URS</span>
+		<span class="uxm__rocket uxm__rocket--a"></span>
+		<span class="uxm__rocket uxm__rocket--b"></span>
+	</div>
+
+	<p>By the time the second station went dark, Corvin had already ordered the
+	charter fleet to close ranks, and was quietly grateful the order sounded
+	more like caution than the fear it actually was.</p>
+
+	<!-- 4 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">4.</span> Micro</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">The restrained fallback, matching the gas-giant rule's own Micro concept: smaller box, slower single pass, in case full-size reads as too much between real paragraphs.</p>
+
+	<hr class="ux ux--micro">
+
+	<p>Nobody on the bridge said the word "incursion." Nobody needed to; it had
+	been sitting in the room since the first station's silence, and speaking it
+	out loud would only have made it official.</p>
+
+	<!-- 5 ----------------------------------------------------------------- -->
+	<div class="cx-label">
+		<h2><span class="num">5.</span> HUD Reticle</h2>
+		<span class="badge bare">bare &lt;hr&gt;</span>
+	</div>
+	<p class="cx-note">Thin corner brackets frame the whole lane like a targeting display, baked into the same background layer as the starfield. The rocket crosses through the frame.</p>
+
+	<hr class="ux ux--hud">
+
+	<p>Whatever answer the Republic eventually sent back, it would arrive too
+	late to matter to the eleven parsecs Corvin had already crossed - and far
+	too late to matter to whoever had gone quiet out here first.</p>
+
+	<p style="margin-top:3rem;color:#a7a59d;font-family:'Space Grotesk',system-ui,sans-serif;font-size:0.86rem;">
+	&mdash; end of concepts &mdash;
+	</p>
+
+</div>
+</div>
+
+<script>
+// Dev-page only: mirrors prefers-reduced-motion so the frozen pose can be
+// checked without changing an OS setting.
+document.getElementById('freeze').addEventListener('click', function () {
+	var on = document.body.classList.toggle('freeze');
+	this.setAttribute('aria-pressed', String(on));
+	this.textContent = on ? 'Unfreeze motion' : 'Freeze motion';
+});
+</script>
+
+</body>
+</html>

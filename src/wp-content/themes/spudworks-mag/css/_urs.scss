@@ -1,0 +1,221 @@
+// Animated rocket separator for stories set in the Unified Republic of Stars.
+//
+// Two opt-in variants sharing one mechanism:
+//   <hr class="urs">        - full name, ~156px, the primary version
+//   <hr class="urs-micro">  - short "URS" mark, ~76px, a quieter fallback
+//
+// Built to run on a bare <hr>, because that is all the Separator block emits.
+// That caps the effect at three paint layers in a fixed order - the element's
+// own background, ::before, ::after. The starfield + vignette are baked as
+// extra gradient layers inside the element's own background-image (many
+// gradients, still one layer in the budget sense), leaving ::before free for
+// the label and ::after free for the rocket.
+//
+// Concept/prototyping history: dev/hr-concepts.html and dev/urs-concepts.html
+// in the theme root show the discarded alternatives (Diagonal Streak's fin
+// hints, Twin Pass's crossing rockets, HUD Reticle's corner brackets) if a
+// third variant is ever wanted.
+
+@use 'variables' as *;
+
+// --- Shared sizing -----------------------------------------------------
+// Rocket geometry as custom properties so .urs-micro can rescale them without
+// repeating the ::after rule below. --urs-travel-x/-y MUST stay equal: the
+// rocket's nose is fixed at rotate(45deg) in the ::after rule, so an unequal
+// travel vector reads as the shape sliding sideways instead of flying
+// nose-first - this was a real bug in an earlier draft (168px/44px, roughly a
+// 15deg path under a 45deg-pointed rocket).
+.article-content hr.urs,
+.article-content hr.urs-micro {
+	position: relative;
+	display: block;
+	width: 100%;
+	border: 0;
+	opacity: 1;
+	overflow: hidden; // contains the rocket's diagonal excursion to this box;
+	                   // does not clip this element's own background or its
+	                   // box-shadow, only descendants/replaced content
+
+	--urs-rocket-w: 11px;
+	--urs-rocket-h: 46px;
+	--urs-travel-x: 140px;
+	--urs-travel-y: 140px;
+
+	background-image:
+		// Vignette, painted as ink-colour-fading-to-transparent overlays rather
+		// than a mask: since the lane always sits on the flat $ink page
+		// background, fading TO that same solid colour reads identically to a
+		// true mask without needing mask-composite's browser-prefix mess.
+		// Listed first so they paint on top of the glow/stars beneath.
+		//
+		// Vertical: deliberately generous (34% fade zone top and bottom, only
+		// a 32%-tall solid band survives in the middle) so the lane dissolves
+		// into the surrounding prose rather than stopping at a hard edge.
+		linear-gradient(to bottom, $ink 0%, rgba($ink, 0) 34%, rgba($ink, 0) 66%, $ink 100%),
+		// Horizontal: a much lighter touch (10% each side) - the starfield
+		// stays visible across most of the width so the rocket has something
+		// to fly over on its way to the edges.
+		linear-gradient(to right, $ink 0%, rgba($ink, 0) 10%, rgba($ink, 0) 90%, $ink 100%),
+		// centre glow
+		radial-gradient(circle at 50% 50%, rgba($urs-blue, 0.38) 0%, rgba($urs-blue, 0.20) 32%, rgba($urs-blue, 0.08) 58%, rgba($urs-blue, 0) 78%),
+		// stars: brightest near centre, dimmest toward the edges - literally
+		// "white stars over blue, fading as they go further out"
+		radial-gradient(circle 1.6px at 44% 42%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.4px at 57% 60%, #ffffff 60%, transparent 100%),
+		radial-gradient(circle 1.5px at 52% 34%, rgba(255, 255, 255, 0.9) 60%, transparent 100%),
+		radial-gradient(circle 1.2px at 30% 35%, rgba(255, 255, 255, 0.6) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 68% 66%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+		radial-gradient(circle 1.2px at 40% 72%, rgba(255, 255, 255, 0.5) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 63% 28%, rgba(255, 255, 255, 0.55) 55%, transparent 100%),
+		radial-gradient(circle 1.1px at 22% 55%, rgba(255, 255, 255, 0.45) 55%, transparent 100%),
+		radial-gradient(circle 1px at 12% 25%, rgba(255, 255, 255, 0.26) 55%, transparent 100%),
+		radial-gradient(circle 1px at 88% 75%, rgba(255, 255, 255, 0.22) 55%, transparent 100%),
+		radial-gradient(circle 1px at 18% 82%, rgba(255, 255, 255, 0.24) 55%, transparent 100%),
+		radial-gradient(circle 1px at 83% 20%, rgba(255, 255, 255, 0.26) 55%, transparent 100%),
+		radial-gradient(circle 0.8px at 6% 55%, rgba(255, 255, 255, 0.18) 55%, transparent 100%),
+		radial-gradient(circle 0.8px at 95% 46%, rgba(255, 255, 255, 0.2) 55%, transparent 100%),
+		radial-gradient(circle 0.9px at 27% 8%, rgba(255, 255, 255, 0.28) 55%, transparent 100%),
+		radial-gradient(circle 0.9px at 74% 92%, rgba(255, 255, 255, 0.26) 55%, transparent 100%);
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+}
+
+.article-content hr.urs {
+	// 128px -> 156px vs. an earlier draft: a true 45deg rocket path that also
+	// reaches well left/right needs proportionally more vertical room (equal
+	// parts, per the --urs-travel-* comment above), plus space for the
+	// vertical vignette to fade through gently.
+	height: 156px;
+	margin: 3rem 0;
+}
+
+.article-content hr.urs-micro {
+	height: 76px;
+	margin: 2.25rem 0;
+	--urs-rocket-w: 8px;
+	--urs-rocket-h: 32px;
+	--urs-travel-x: 70px;
+	--urs-travel-y: 70px;
+}
+
+// Neutralise the sW divider (_hazard.scss), which is otherwise still painting
+// its hazard stripe/"sW" and translateY(-50%)/translate(-50%,-50%) centring
+// through these same two pseudo-elements.
+//
+// `transform: none` is the load-bearing line, same trap as _orbit.scss: those
+// centring transforms survive into any rule that doesn't explicitly overwrite
+// them, silently shifting the label/rocket by half their own size.
+.article-content hr.urs::before,
+.article-content hr.urs::after,
+.article-content hr.urs-micro::before,
+.article-content hr.urs-micro::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	right: auto;
+	transform: none;
+	background: none;
+	-webkit-mask-image: none;
+	mask-image: none;
+	padding: 0;
+	font-size: 0;
+	border-radius: 0;
+}
+
+// The label: small-caps mono, tracked wide, a hairline frame top and bottom
+// like a telemetry readout rather than the magazine's editorial serif - the
+// one place the theme currently sounds like a spacecraft instead of a
+// magazine, deliberately.
+.article-content hr.urs::before {
+	content: "Unified Republic of Stars";
+	transform: translate(-50%, -50%);
+	font-family: $sans;
+	// clamp() keeps it one line down to a phone-width column; it only wraps
+	// under real duress.
+	font-size: clamp(0.56rem, 2.5vw, 0.72rem);
+	font-weight: $weight-bold;
+	letter-spacing: 0.22em;
+	text-indent: 0.22em; // re-centres the optical weight the trailing tracking adds
+	text-transform: uppercase;
+	color: $urs-text;
+	white-space: normal;
+	max-width: 88%;
+	text-align: center;
+	padding: 0.4em 0 0.5em;
+	border-top: 1px solid rgba($urs-blue-bright, 0.4);
+	border-bottom: 1px solid rgba($urs-blue-bright, 0.4);
+}
+
+.article-content hr.urs-micro::before {
+	content: "URS";
+	transform: translate(-50%, -50%);
+	font-family: $sans;
+	font-size: 0.68rem;
+	font-weight: $weight-bold;
+	letter-spacing: 0.32em;
+	text-indent: 0.32em;
+	text-transform: uppercase;
+	color: $urs-text;
+	white-space: nowrap;
+	padding: 0.4em 0 0.5em;
+	border-top: 1px solid rgba($urs-blue-bright, 0.4);
+	border-bottom: 1px solid rgba($urs-blue-bright, 0.4);
+}
+
+// The rocket: one clip-path spindle, nose bright and tail fading to
+// transparent, oriented "north" at rest. rotate(45deg) is the trailing
+// (innermost-applied) function so it only spins the shape in place; the
+// animated translate() is the leading (outermost) function, so it moves the
+// shape in real screen-space pixels along a true 45deg line rather than along
+// the shape's own rotated axis - see --urs-travel-* above.
+.article-content hr.urs::after,
+.article-content hr.urs-micro::after {
+	width: var(--urs-rocket-w);
+	height: var(--urs-rocket-h);
+	margin: calc(-0.5 * var(--urs-rocket-h)) 0 0 calc(-0.5 * var(--urs-rocket-w));
+	clip-path: polygon(50% 0%, 66% 24%, 60% 82%, 50% 100%, 40% 82%, 34% 24%);
+	background-image: linear-gradient(
+		to top,
+		rgba($urs-blue-bright, 0) 0%,
+		rgba($urs-blue-bright, 0.55) 25%,
+		#cfe6ff 68%,
+		$urs-white 100%
+	);
+	filter: drop-shadow(0 0 5px rgba($urs-blue-bright, 0.65));
+	animation: urs-streak 7s ease-in-out infinite;
+}
+
+.article-content hr.urs-micro::after {
+	animation-duration: 9s;
+}
+
+@keyframes urs-streak {
+	0%   { transform: translate(calc(-1 * var(--urs-travel-x)), var(--urs-travel-y)) rotate(45deg); opacity: 0; }
+	// 25%/75% rather than a snappier 10%/90%: a slower, gentler fade in and
+	// out, roughly matching the pace of the background vignette it flies
+	// through instead of popping to full opacity almost immediately.
+	25%  { opacity: 1; }
+	50%  { transform: translate(0, 0) rotate(45deg); }
+	75%  { opacity: 1; }
+	100% { transform: translate(var(--urs-travel-x), calc(-1 * var(--urs-travel-y))) rotate(45deg); opacity: 0; }
+}
+
+// Freeze into a composed pose. Plain `animation: none` would fling the
+// rocket back to keyframe 0% (off-frame, opacity 0). No explicit opacity
+// override needed here - nothing outside the animation sets opacity on this
+// element, so `animation: none` already reverts it to the initial value (1).
+@media (prefers-reduced-motion: reduce) {
+	.article-content hr.urs::after,
+	.article-content hr.urs-micro::after {
+		animation: none;
+		transform: translate(calc(-0.35 * var(--urs-travel-x)), calc(0.35 * var(--urs-travel-y))) rotate(45deg);
+	}
+}
+
+@media print {
+	.article-content hr.urs::after,
+	.article-content hr.urs-micro::after {
+		animation: none;
+	}
+}

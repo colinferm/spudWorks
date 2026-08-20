@@ -2,6 +2,7 @@
 
 @use 'variables' as *;
 @use 'grid' as *;
+@use 'motion' as *;
 
 .site-main {
 	padding: 2rem 0 3rem;
@@ -259,14 +260,16 @@
 			color: $hazard-yellow;
 			border: 0;
 			padding: 0.28rem 0.65rem;
-			background: rgba($hazard-black, 0.55);
+			background-color: rgba($hazard-black, 0.55);
 			border-left: 2px solid $hazard-yellow;
-			transition: color 0.15s ease, background 0.15s ease;
+			// The fill wipes in left-to-right on hover; see _motion.scss.
+			@include wipe-fill($hazard-yellow);
+			@include wipe-transition(background-size, color);
 
 			&:hover,
 			&:focus {
 				color: $hazard-black;
-				background: $hazard-yellow;
+				@include wipe-fill-on;
 			}
 		}
 
@@ -367,4 +370,14 @@
 // Widget contexts (showcase sidebar, footer columns): fill the column width.
 .search-box--widget {
 	width: 100%;
+}
+
+// The wipe transition above is purely decorative; jump straight to the
+// hover/focus end state instead of disabling the feedback outright. Matches
+// the compiled .site-footer__col .widget_nav_menu ... specificity - without
+// that prefix this override would lose the cascade and keep animating.
+@media (prefers-reduced-motion: reduce) {
+	.site-footer__col .widget_nav_menu .menu-item a {
+		transition: none;
+	}
 }

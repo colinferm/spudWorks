@@ -3,6 +3,7 @@
 @use 'variables' as *;
 @use 'grid' as *;
 @use 'hazard' as *;
+@use 'motion' as *;
 //   --under    image on top, text left underneath (default workhorse)
 //   --overlay  centered text over the image behind a scrim
 //   --featured larger strip card, text over the lower image
@@ -63,13 +64,16 @@
 		color: $hazard-yellow;
 		border: 0;
 		padding: 0.15rem 0.5rem;
-		background: rgba($hazard-black, 0.55);
+		background-color: rgba($hazard-black, 0.55);
 		border-left: 2px solid $hazard-yellow;
+		// The fill wipes in left-to-right on hover; see _motion.scss.
+		@include wipe-fill($hazard-yellow);
+		@include wipe-transition(background-size, color);
 
 		&:hover,
 		&:focus {
 			color: $hazard-black;
-			background: $hazard-yellow;
+			@include wipe-fill-on;
 		}
 	}
 }
@@ -113,10 +117,14 @@
 	a {
 		color: inherit;
 		border: 0;
+		// The underline wipes in left-to-right on hover; see _motion.scss.
+		//@include wipe-underline(2px, $hazard-yellow);
+		@include wipe-transition(background-size, color);
 
 		&:hover,
 		&:focus {
 			color: $hazard-yellow;
+			//@include wipe-underline-on(2px);
 		}
 	}
 }
@@ -303,4 +311,13 @@
 // No featured image on an under card: fill the media slot with the hazard motif.
 .card__media--hazard {
 	@include hazard-panel(26px);
+}
+
+// The wipe transitions above are purely decorative; jump straight to the
+// hover/focus end state instead of disabling the feedback outright.
+@media (prefers-reduced-motion: reduce) {
+	.term-chips li a,
+	.card-title a {
+		transition: none;
+	}
 }

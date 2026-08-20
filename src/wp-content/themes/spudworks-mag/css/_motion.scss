@@ -1,0 +1,66 @@
+// Shared "wipe" primitive: hover/focus decoration that eases in left-to-right
+// instead of snapping or fading in place. Used by tag chips (fill), headline
+// links and in-content links (underline).
+//
+// The technique is an animated background-size on a background-image layer
+// anchored to the left edge, NOT a ::before with transform: scaleX(). A
+// positioned pseudo-element paints above its parent's inline text, so a fill
+// pseudo-element would cover the label and need z-index: -1, which then
+// depends on whether the parent happens to form a stacking context. A
+// background layer has none of that: no stacking questions, no
+// overflow: hidden, and it behaves the same on inline and inline-block boxes.
+//
+// Each site calls one *-fill/-underline mixin at rest, wipe-transition() with
+// every property it animates (background-size plus whatever else - color,
+// border-color, ...), and the matching *-on mixin inside &:hover, &:focus.
+
+@use 'sass:list';
+@use 'variables' as *;
+
+// One shared transition declaration for a list of properties, all timed
+// alike. transition: is not additive - a rule can only declare it once - so
+// this exists specifically to let a site add color/border-color alongside
+// background-size without repeating the duration/easing tokens by hand.
+//
+//   @include wipe-transition(background-size, color, border-color);
+//   -> transition: background-size 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out;
+@mixin wipe-transition($properties...) {
+	$out: ();
+	@each $prop in $properties {
+		$out: list.append($out, $prop $wipe-duration $wipe-ease, comma);
+	}
+	transition: $out;
+}
+
+// --- Fill: tag chips ---------------------------------------------------
+
+// A solid colour block that grows from 0% to 100% width behind the label.
+@mixin wipe-fill($colour) {
+	background-image: linear-gradient($colour, $colour);
+	background-repeat: no-repeat;
+	background-position: left center;
+	background-size: 0% 100%;
+}
+
+@mixin wipe-fill-on {
+	background-size: 100% 100%;
+}
+
+// --- Underline: headline + in-content links -----------------------------
+
+// A thin colour block anchored to the bottom edge, growing from 0% to 100%
+// width. box-decoration-break: clone makes a wrapped link draw one underline
+// per line fragment, each starting at its own left edge, instead of one
+// background stretched across the whole wrapped box.
+@mixin wipe-underline($thickness, $colour: currentColor) {
+	background-image: linear-gradient($colour, $colour);
+	background-repeat: no-repeat;
+	background-position: left bottom;
+	background-size: 0% $thickness;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+@mixin wipe-underline-on($thickness) {
+	background-size: 100% $thickness;
+}

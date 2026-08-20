@@ -70,4 +70,18 @@
 		'Insert a table of contents',
 		205
 	);
+
+	// Unlike the buttons above, this one does not pre-fill title="" — the
+	// default heading ("An Aside") is what's wanted most of the time, so a bare
+	// [aside] needs no attribute deleted before use. Add title="…" (or title=""
+	// for no heading) as an opt-in edit.
+	QTags.addButton(
+		'spudmag_aside',
+		'aside',
+		'[aside]',
+		'[/aside]',
+		'',
+		'Insert a side note',
+		206
+	);
 })();

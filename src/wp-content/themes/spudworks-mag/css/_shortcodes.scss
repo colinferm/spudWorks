@@ -40,6 +40,7 @@
 		align-items: center;
 		gap: 0.7rem;
 		border: 0;
+		background-image: none; // this box has its own hover treatment, not the prose wipe underline
 		color: $paper;
 		max-width: 48%;
 
@@ -444,6 +445,7 @@ $notice-info:   $paper-dim;
 
 	&__link {
 		border: 0;
+		background-image: none; // this box has its own hover treatment, not the prose wipe underline
 		color: $accent;
 
 		&:hover,
@@ -474,5 +476,81 @@ $notice-info:   $paper-dim;
 	// Desktop: keep it to a third of the content well.
 	@include from($bp-lg) {
 		max-width: 33%;
+	}
+}
+
+// --- [aside] -----------------------------------------------------------------
+// A short side note the reader can take or leave. Set beside the prose in a
+// small yellow-capped box the text wraps around, in type a notch smaller,
+// tighter and dimmer than body copy so it reads as marginal rather than as part
+// of the argument. On phones the float drops and it becomes a full-width block.
+.aside {
+	width: auto;
+	margin: 1.5rem 0.6rem; // slight inset on phones
+	padding: 1rem 1.15rem;
+	background: $ink-panel;
+	border: 1px solid $ink-rule;
+	border-top: 3px solid $hazard-yellow;
+	border-radius: 0 0 3px 3px;
+
+	&__title {
+		font-family: $sans;
+		font-weight: $weight-bold;
+		font-size: 0.85rem;
+		line-height: 1.3;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: $paper;
+		margin: 0 0 0.6rem;
+	}
+
+	// Smaller, tighter and dimmer than the 1.12rem/1.75 body copy. The two
+	// self-hosted families have no width axis, so tracking and leading stand in
+	// for a condensed face — the same levers _typography.scss uses on blockquote.
+	&__body {
+		font-family: $sans;
+		font-size: 0.81rem;
+		line-height: 1.4;
+		letter-spacing: 0;
+		color: $paper-dim;
+
+		p {
+			margin: 0 0 0.6em;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+
+			em, i, cite {
+				color: $paper-dim;
+			}
+		}
+	}
+
+	// Tablet portrait and up: float so the article text wraps around it.
+	@include from($bp-md) {
+		float: right;
+		max-width: 50%;
+		margin: 0.4rem 0 1rem 1.6rem;
+	}
+
+	// Desktop: keep it to a third of the content well.
+	@include from($bp-lg) {
+		max-width: 33%;
+	}
+}
+
+// This box has its own hover treatment, not the prose wipe underline. The
+// `.article-content a` rule that draws it is equal specificity and lives in
+// _single.scss, which loads later — so the opt-out has to be scoped through
+// .article-content to outrank it.
+.article-content .aside a {
+	border: 0;
+	background-image: none;
+	color: $accent;
+
+	&:hover,
+	&:focus {
+		color: $hazard-yellow;
 	}
 }

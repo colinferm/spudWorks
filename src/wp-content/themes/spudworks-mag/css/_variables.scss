@@ -19,6 +19,14 @@ $moon-green:     #46bd7c;
 $moon-green-lit: #57cf8b; // sunlit edge of the green face
 $moon-blue:      #2f77b0;
 
+// Unified Republic of Stars separator only (css/_urs.scss) - a second, distinct
+// "elsewhere": a saturated blue starfield glow instead of the gas giant's
+// ember palette, so URS reads as its own story-world rather than a reskin.
+$urs-blue:        #3a6fd8; // centre glow
+$urs-blue-bright: #9fc7ff; // rocket trail + label hairline frame
+$urs-white:       #f4f8ff; // rocket nose
+$urs-text:        #dce9ff; // label text
+
 // --- Type ------------------------------------------------------------------
 $sans:  'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
 $serif: 'Fraunces', Georgia, 'Times New Roman', serif;
@@ -38,3 +46,9 @@ $bp-sm: 480px;
 $bp-md: 768px;
 $bp-lg: 1024px;
 $bp-xl: 1280px;
+
+// --- Motion ------------------------------------------------------------
+// Shared timing for the left-to-right "wipe" hover treatment (see _motion.scss)
+// used by tag chips, headline underlines, and in-content link underlines.
+$wipe-duration: 0.3s;
+$wipe-ease:     ease-out;

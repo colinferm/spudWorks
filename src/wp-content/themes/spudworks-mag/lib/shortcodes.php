@@ -261,6 +261,39 @@ function spudmagPullquoteShortcode($atts, $content = null) {
 add_shortcode('pullquote', 'spudmagPullquoteShortcode');
 
 /**
+ * [aside] — a short side note set beside the prose rather than in it.
+ *
+ *   [aside title="Optional heading"]Note text[/aside]
+ *       Floats a small boxed note to the right of the column (a third of it on
+ *       desktop, half on tablets) so the body text wraps alongside; on phones it
+ *       becomes a full-width block. title defaults to "An Aside"; pass title=""
+ *       to render the box with no heading at all.
+ */
+function spudmagAsideShortcode($atts, $content = null) {
+	if (!is_string($content) || trim($content) === '') {
+		return '';
+	}
+
+	$a = shortcode_atts(array(
+		'title' => __('An Aside', 'spudworks-mag')
+	), $atts, 'aside');
+
+	$title     = trim($a['title']);
+	$titleHtml = '';
+	if ($title !== '') {
+		$titleHtml = '<p class="aside__title">' . esc_html($title) . '</p>';
+	}
+
+	$body = wpautop(wp_kses_post(do_shortcode(trim($content))));
+
+	return '<aside class="aside">'
+		. $titleHtml
+		. '<div class="aside__body">' . $body . '</div>'
+		. '</aside>';
+}
+add_shortcode('aside', 'spudmagAsideShortcode');
+
+/**
  * [toc] — an auto-generated table of contents for a long post.
  *
  *   [toc]Optional heading text[/toc]

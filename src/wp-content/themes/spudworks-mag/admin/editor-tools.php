@@ -117,6 +117,13 @@ function spudmagEditorHelpTab() {
 		. '<pre>[toc]In this collection[/toc]</pre>'
 		. '<ul>'
 		. '<li>' . esc_html__('The list is generated automatically; add H2/H3 headings in the post body and they appear as entries (sub-entries for H3), keeping any italics.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[aside]</h3>'
+		. '<p>' . esc_html__('A short side note in a small box floated to the right of the column, which the body text wraps around (a third of the column on desktop, half on tablets, full width on phones). The type is smaller and dimmer than body copy so readers can skip it.', 'spudworks-mag') . '</p>'
+		. '<pre>[aside]A quick note off to the side.[/aside]
+[aside title="On the Mk II"]A quick note off to the side.[/aside]</pre>'
+		. '<ul>'
+		. '<li><code>title</code> — ' . esc_html__('the box heading. Defaults to "An Aside"; use title="" for no heading.', 'spudworks-mag') . '</li>'
 		. '</ul>';
 
 	$screen->add_help_tab(array(
@@ -125,10 +132,14 @@ function spudmagEditorHelpTab() {
 		'content' => $help
 	));
 
-	$separators = '<p>' . esc_html__('A Separator block normally renders as the "sW" hazard divider. For serialised fiction you can swap a single one for an animated gas giant with a moon crossing it.', 'spudworks-mag') . '</p>'
+	$separators = '<p>' . esc_html__('A Separator block normally renders as the "sW" hazard divider. Two opt-in animated alternatives are also available, one per fictional universe.', 'spudworks-mag') . '</p>'
 		. '<h3>' . esc_html__('Orbit separator', 'spudworks-mag') . '</h3>'
-		. '<p>' . esc_html__('Add a Separator block, open Advanced in the block sidebar, and put "orbit" in Additional CSS class(es). In the Text editor, write it directly:', 'spudworks-mag') . '</p>'
+		. '<p>' . esc_html__('An animated gas giant with a moon crossing it. Add a Separator block, open Advanced in the block sidebar, and put "orbit" in Additional CSS class(es). In the Text editor, write it directly:', 'spudworks-mag') . '</p>'
 		. '<pre>&lt;hr class="orbit"&gt;</pre>'
+		. '<h3>' . esc_html__('URS separator', 'spudworks-mag') . '</h3>'
+		. '<p>' . esc_html__('A rocket streaking past the Unified Republic of Stars name over a starfield. Two sizes — use "urs" for the full name, or "urs-micro" for a smaller, quieter mark that just reads "URS":', 'spudworks-mag') . '</p>'
+		. '<pre>&lt;hr class="urs"&gt;
+&lt;hr class="urs-micro"&gt;</pre>'
 		. '<ul>'
 		. '<li>' . esc_html__('Opt-in per separator — every other <hr> keeps the sW divider, including inside fiction posts.', 'spudworks-mag') . '</li>'
 		. '<li>' . esc_html__('Works in any post, not just fiction ones.', 'spudworks-mag') . '</li>'
