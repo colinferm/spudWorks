@@ -113,7 +113,7 @@ function spudmagMetaTags() {
 		$title       = get_the_title($postId);
 		$url         = get_permalink($postId);
 		$ogType      = is_singular('post') ? 'article' : 'website';
-		$description = spudmagMetaTrim(get_the_excerpt($postId));
+		$description = spudmagMetaTrim(spudmagGetSubhead($postId));
 	} elseif (is_front_page() || is_home()) {
 		$title       = $siteName;
 		$url         = home_url('/');

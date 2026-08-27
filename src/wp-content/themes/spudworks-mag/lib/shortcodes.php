@@ -2,17 +2,28 @@
 /**
  * spudWorks Magazine — editorial shortcodes.
  *
- *   [multipart prev-url=URL prev-link="Text" next-url=URL next-link="Text"]
+ *   [multipart prev-id=ID prev-url=URL prev-link="Text" next-id=ID next-url=URL next-link="Text"]
  *       optional intro blurb
  *   [/multipart]
  *       A navigation box linking the parts of a multi-part post. Drop it at the
  *       top and/or bottom of a post. Every attribute is optional; the box only
- *       renders when at least one of prev-url / next-url is supplied, and each
- *       side shows only when its URL is present.
+ *       renders when at least one side resolves to a link. On each side, an id
+ *       wins over a url; an id must point at a *published* post or that side is
+ *       dropped (lets a series be wired up ahead of a scheduled release without
+ *       a follow-up edit). Link text defaults to the target post's title when
+ *       an id is used and no explicit prev-link/next-link is given.
  *
  *   [author-note author="Optional Name"]Note text[/author-note]
  *       A styled aside headed "A note from the author, NAME". NAME defaults to
  *       the post author; the optional attribute overrides it (e.g. guest notes).
+ *
+ *   [necro-card size="full|half" name="..." role="..." value="..." stat-*="..." wargear="..." skills="..."]
+ *       [necro-weapon name="..." stat-sr="..." stat-lr="..." stat-s="..." stat-ap="..." stat-l="..." traits="..."/]
+ *   [/necro-card]
+ *       A Necromunda-style fighter stat card. name is the only required
+ *       attribute; role/value show an em dash when omitted; wargear/skills and
+ *       the weapons table are omitted entirely when there's nothing to show.
+ *       Consecutive cards in a post auto-group into a centered, wrapping row.
  */
 
 /**
@@ -26,18 +37,56 @@ function spudmagArrowSvg($direction) {
 }
 
 /**
+ * Resolve one side of a [multipart] box to a url and a label.
+ *
+ * An id beats a url. The linked post must be published, so a part that is
+ * still a draft or scheduled drops out of the box until it goes live —
+ * that's the point: a series can be wired up ahead of time and left alone.
+ * Returns an empty url when there is nothing to link.
+ */
+function spudmagMultipartLink($id, $url, $label, $fallbackLabel) {
+	$postId = (int) $id;
+	$label  = trim($label);
+
+	if ($postId > 0) {
+		if (get_post_status($postId) !== 'publish') {
+			return array('url' => '', 'label' => '');
+		}
+		$permalink = get_permalink($postId);
+		if (!$permalink) {
+			return array('url' => '', 'label' => '');
+		}
+		return array(
+			'url'   => $permalink,
+			'label' => $label !== '' ? $label : (get_the_title($postId) ?: $fallbackLabel)
+		);
+	}
+
+	$url = trim($url);
+	return array(
+		'url'   => $url,
+		'label' => $label !== '' ? $label : $fallbackLabel
+	);
+}
+
+/**
  * [multipart] — previous / next navigation box for serialised posts.
  */
 function spudmagMultipartShortcode($atts, $content = null) {
 	$a = shortcode_atts(array(
+		'prev-id'   => '',
 		'prev-url'  => '',
-		'prev-link' => __('Previous Post', 'spudworks-mag'),
+		'prev-link' => '',
+		'next-id'   => '',
 		'next-url'  => '',
-		'next-link' => __('Next Post', 'spudworks-mag')
+		'next-link' => ''
 	), $atts, 'multipart');
 
-	$prevUrl = trim($a['prev-url']);
-	$nextUrl = trim($a['next-url']);
+	$prev = spudmagMultipartLink($a['prev-id'], $a['prev-url'], $a['prev-link'], __('Previous Post', 'spudworks-mag'));
+	$next = spudmagMultipartLink($a['next-id'], $a['next-url'], $a['next-link'], __('Next Post', 'spudworks-mag'));
+
+	$prevUrl = $prev['url'];
+	$nextUrl = $next['url'];
 
 	// Nothing to link -> render nothing.
 	if ($prevUrl === '' && $nextUrl === '') {
@@ -52,25 +101,38 @@ function spudmagMultipartShortcode($atts, $content = null) {
 
 	$prevHtml = '';
 	if ($prevUrl !== '') {
-		$prevHtml = '<a class="multipart__link multipart__link--prev" href="' . esc_url($prevUrl) . '">'
+		// rel="prev" is the HTML link-relation built for exactly this: "the
+		// previous item in a series" (the same vocabulary WP core emits for
+		// archive pagination in <head>).
+		$prevHtml = '<a class="multipart__link multipart__link--prev" href="' . esc_url($prevUrl) . '" rel="prev">'
 			. spudmagArrowSvg('prev')
 			. '<span class="multipart__text">'
 				. '<span class="multipart__kicker">' . esc_html__('Previously', 'spudworks-mag') . '</span>'
-				. '<span class="multipart__title">' . esc_html($a['prev-link']) . '</span>'
+				. '<span class="multipart__title">' . esc_html($prev['label']) . '</span>'
 			. '</span></a>';
 	}
 
 	$nextHtml = '';
 	if ($nextUrl !== '') {
-		$nextHtml = '<a class="multipart__link multipart__link--next" href="' . esc_url($nextUrl) . '">'
+		$nextHtml = '<a class="multipart__link multipart__link--next" href="' . esc_url($nextUrl) . '" rel="next">'
 			. '<span class="multipart__text">'
 				. '<span class="multipart__kicker">' . esc_html__('Up next', 'spudworks-mag') . '</span>'
-				. '<span class="multipart__title">' . esc_html($a['next-link']) . '</span>'
+				. '<span class="multipart__title">' . esc_html($next['label']) . '</span>'
 			. '</span>'
 			. spudmagArrowSvg('next') . '</a>';
 	}
 
-	return '<nav class="multipart" aria-label="' . esc_attr__('Multi-part navigation', 'spudworks-mag') . '">'
+	// A post can carry more than one [multipart] (e.g. one at the top and one
+	// at the bottom, as the Dark Matter series does) — number the landmark
+	// label from the second instance on so a screen reader's landmark list
+	// doesn't show two identically-named "Multi-part navigation" regions.
+	static $instance = 0;
+	$instance++;
+	$label = $instance > 1
+		? sprintf(__('Multi-part navigation %d', 'spudworks-mag'), $instance)
+		: __('Multi-part navigation', 'spudworks-mag');
+
+	return '<nav class="multipart" aria-label="' . esc_attr($label) . '">'
 		. $introHtml
 		. '<div class="multipart__nav">' . $prevHtml . $nextHtml . '</div>'
 		. '</nav>';
@@ -404,3 +466,253 @@ function spudmagRenderToc($content) {
 	return $content;
 }
 add_filter('the_content', 'spudmagRenderToc', 99);
+
+/**
+ * [necro-weapon] — one weapon line inside a [necro-card]. Self-closing; only
+ * meaningful nested inside [necro-card], which is the only thing that ever
+ * assembles its <tr> fragments into a table.
+ *
+ *   [necro-weapon name="Stub gun" stat-sr="6" stat-lr="12" stat-s="3" stat-ap="-" stat-l="1" traits="Light"/]
+ *       Every attribute is optional and left blank when omitted. stat-sr/stat-lr
+ *       get a trailing " only when the value given is a plain whole number (a
+ *       melee weapon's "E" range, for instance, is left bare).
+ */
+function spudmagNecroWeaponRange($value) {
+	$value = trim($value);
+	if ($value === '') {
+		return '';
+	}
+	return ctype_digit($value) ? $value . '"' : $value;
+}
+
+function spudmagNecroWeaponShortcode($atts) {
+	$a = shortcode_atts(array(
+		'name'    => '',
+		'stat-sr' => '',
+		'stat-lr' => '',
+		'stat-s'  => '',
+		'stat-ap' => '',
+		'stat-l'  => '',
+		'traits'  => ''
+	), $atts, 'necro-weapon');
+
+	return '<tr class="necro-card__weapon-row">'
+		. '<td class="necro-card__weapon-name">' . esc_html($a['name']) . '</td>'
+		. '<td>' . esc_html(spudmagNecroWeaponRange($a['stat-sr'])) . '</td>'
+		. '<td>' . esc_html(spudmagNecroWeaponRange($a['stat-lr'])) . '</td>'
+		. '<td>' . esc_html($a['stat-s']) . '</td>'
+		. '<td>' . esc_html($a['stat-ap']) . '</td>'
+		. '<td>' . esc_html($a['stat-l']) . '</td>'
+		. '<td class="necro-card__weapon-traits">' . esc_html($a['traits']) . '</td>'
+		. '</tr>';
+}
+add_shortcode('necro-weapon', 'spudmagNecroWeaponShortcode');
+
+/**
+ * One <td> in a [necro-card] stat row. Blank when the attribute is omitted —
+ * only an explicit value (including a literal "-") ever prints.
+ */
+function spudmagNecroStatCell($value) {
+	return '<td>' . esc_html(trim($value)) . '</td>';
+}
+
+/**
+ * [necro-card] — a Necromunda-style fighter stat card.
+ *
+ *   [necro-card size="full|half" name="Trevor" role="Forge Boss (Champion)"
+ *       value="160" stat-m="4" stat-ws="3+" stat-bs="3+" stat-s="3" stat-t="4"
+ *       stat-w="2" stat-i="3" stat-a="2" stat-sv="5+" stat-ld="7" stat-cl="8"
+ *       stat-wil="6" stat-int="6" stat-xp="37" wargear="Respirator"
+ *       skills="Inspiring, Nerves of Steel"]
+ *       [necro-weapon .../]
+ *       [necro-weapon .../]
+ *   [/necro-card]
+ *       size defaults to "full"; name is the only required attribute. role/value
+ *       show an em dash when omitted. wargear/skills lines are omitted entirely
+ *       when blank, and the weapons table only appears when at least one
+ *       [necro-weapon] is nested inside. Consecutive [necro-card]s in a post
+ *       are automatically grouped into a centered, wrapping row — see
+ *       spudmagRenderNecroCardRows().
+ */
+function spudmagNecroCardShortcode($atts, $content = null) {
+	$a = shortcode_atts(array(
+		'size'     => 'full',
+		'name'     => '',
+		'role'     => '',
+		'value'    => '',
+		'stat-m'   => '',
+		'stat-ws'  => '',
+		'stat-bs'  => '',
+		'stat-s'   => '',
+		'stat-t'   => '',
+		'stat-w'   => '',
+		'stat-i'   => '',
+		'stat-a'   => '',
+		'stat-sv'  => '',
+		'stat-ld'  => '',
+		'stat-cl'  => '',
+		'stat-wil' => '',
+		'stat-int' => '',
+		'stat-xp'  => '',
+		'wargear'  => '',
+		'skills'   => ''
+	), $atts, 'necro-card');
+
+	$name = trim($a['name']);
+	if ($name === '') {
+		return '';
+	}
+
+	$size = in_array($a['size'], array('full', 'half'), true) ? $a['size'] : 'full';
+
+	$role  = trim($a['role']);
+	$value = trim($a['value']);
+
+	$headerHtml = '<div class="necro-card__band"></div>'
+		. '<div class="necro-card__header">'
+			. '<div class="necro-card__identity">'
+				// A heading (rather than a plain <p>) so a screen-reader user
+				// can jump card-to-card by heading when a post strings
+				// several of these together — h4 sits safely under whatever
+				// h2/h3 the surrounding article uses, and [toc] only scans
+				// h2/h3 so this can't leak into anyone's table of contents.
+				. '<h4 class="necro-card__name">' . esc_html($name) . '</h4>'
+				. '<p class="necro-card__role">' . esc_html($role !== '' ? $role : '—') . '</p>'
+			. '</div>'
+			. '<div class="necro-card__value">'
+				. '<span class="necro-card__value-number">' . esc_html($value !== '' ? $value : '—') . '</span>'
+				. '<span class="necro-card__value-label">' . esc_html__('Credits', 'spudworks-mag') . '</span>'
+			. '</div>'
+		. '</div>';
+
+	$primaryLabels   = array('M', 'WS', 'BS', 'S', 'T', 'W', 'I', 'A', 'Sv');
+	$primaryKeys     = array('stat-m', 'stat-ws', 'stat-bs', 'stat-s', 'stat-t', 'stat-w', 'stat-i', 'stat-a', 'stat-sv');
+	$secondaryLabels = array('Ld', 'Cl', 'Wil', 'Int', 'XP');
+	$secondaryKeys   = array('stat-ld', 'stat-cl', 'stat-wil', 'stat-int', 'stat-xp');
+
+	// Two independent tables, not one 14-column row: on a narrow card the
+	// secondary group needs to drop to a line of its own rather than force a
+	// horizontal scrollbar, and a table row can't reflow its own columns.
+	$primaryHeadHtml = '';
+	$primaryBodyHtml = '';
+	foreach ($primaryLabels as $label) {
+		$primaryHeadHtml .= '<th scope="col">' . esc_html($label) . '</th>';
+	}
+	foreach ($primaryKeys as $key) {
+		$primaryBodyHtml .= spudmagNecroStatCell($a[$key]);
+	}
+
+	$secondaryHeadHtml = '';
+	$secondaryBodyHtml = '';
+	foreach ($secondaryLabels as $label) {
+		$secondaryHeadHtml .= '<th scope="col">' . esc_html($label) . '</th>';
+	}
+	foreach ($secondaryKeys as $key) {
+		$secondaryBodyHtml .= spudmagNecroStatCell($a[$key]);
+	}
+
+	// Split into two <table>s purely for layout (so the secondary group can
+	// drop to its own line on a narrow card) — role="group" + aria-label ties
+	// them back together as one logical characteristics block, so a screen
+	// reader user doesn't land on two small, seemingly-unrelated tables.
+	$statsHtml = '<div class="necro-card__stat-groups" role="group" aria-label="'
+			. esc_attr(sprintf(__('%s characteristics', 'spudworks-mag'), $name)) . '">'
+		. '<table class="necro-card__stat-group necro-card__stat-group--primary">'
+			. '<thead><tr>' . $primaryHeadHtml . '</tr></thead>'
+			. '<tbody><tr>' . $primaryBodyHtml . '</tr></tbody>'
+		. '</table>'
+		. '<table class="necro-card__stat-group necro-card__stat-group--secondary">'
+			. '<thead><tr>' . $secondaryHeadHtml . '</tr></thead>'
+			. '<tbody><tr>' . $secondaryBodyHtml . '</tr></tbody>'
+		. '</table>'
+	. '</div>';
+
+	// The raw content should only ever be whitespace and nested [necro-weapon]
+	// tags, but wpautop (which runs before do_shortcode) inserts <br> between
+	// them since they sit on consecutive lines inside one paragraph-shaped
+	// block. Left in, those <br> tags land as direct children of our <tbody>,
+	// which browsers "foster parent" out in front of the table. Stripping tags
+	// first is safe: shortcode brackets aren't HTML tags, so this can't touch
+	// the [necro-weapon] occurrences themselves.
+	$rawContent = is_string($content) ? $content : '';
+	$weaponsHtml = '';
+	if (strpos($rawContent, '[necro-weapon') !== false) {
+		$rows = do_shortcode(wp_strip_all_tags($rawContent));
+		$weaponsHtml = '<div class="necro-card__weapons">'
+			. '<table class="necro-card__weapon-table" aria-label="'
+					. esc_attr(sprintf(__('%s weapons', 'spudworks-mag'), $name)) . '">'
+				. '<thead><tr>'
+					. '<th class="necro-card__weapon-name" scope="col">' . esc_html__('Weapon', 'spudworks-mag') . '</th>'
+					. '<th scope="col">' . esc_html__('SR', 'spudworks-mag') . '</th>'
+					. '<th scope="col">' . esc_html__('LR', 'spudworks-mag') . '</th>'
+					. '<th scope="col">' . esc_html__('Str', 'spudworks-mag') . '</th>'
+					. '<th scope="col">' . esc_html__('AP', 'spudworks-mag') . '</th>'
+					. '<th scope="col">' . esc_html__('L', 'spudworks-mag') . '</th>'
+					. '<th class="necro-card__weapon-traits" scope="col">' . esc_html__('Traits', 'spudworks-mag') . '</th>'
+				. '</tr></thead>'
+				. '<tbody>' . $rows . '</tbody>'
+			. '</table>'
+		. '</div>';
+	}
+
+	// Wargear/Skills are name/value pairs, which is exactly what <dl> is for
+	// — more correct than reusing <p><span> for something that isn't really
+	// prose, and it costs nothing visually (still styled as label + value).
+	$wargear = trim($a['wargear']);
+	$skills  = trim($a['skills']);
+	$metaHtml = '';
+	if ($wargear !== '' || $skills !== '') {
+		$metaHtml .= '<dl class="necro-card__meta">';
+		if ($wargear !== '') {
+			$metaHtml .= '<dt class="necro-card__meta-label">' . esc_html__('Wargear', 'spudworks-mag') . '</dt>'
+				. '<dd class="necro-card__meta-value">' . esc_html($wargear) . '</dd>';
+		}
+		if ($skills !== '') {
+			$metaHtml .= '<dt class="necro-card__meta-label">' . esc_html__('Skills', 'spudworks-mag') . '</dt>'
+				. '<dd class="necro-card__meta-value">' . esc_html($skills) . '</dd>';
+		}
+		$metaHtml .= '</dl>';
+	}
+
+	// Wrapped in sentinel comments so spudmagRenderNecroCardRows() can find and
+	// group consecutive cards after the fact without having to count nested
+	// <article>s to locate this card's own closing tag.
+	//
+	// <article>, not <div>: a fighter card is exactly the kind of
+	// self-contained, independently-meaningful unit that element is for,
+	// and it gives a screen-reader user a landmark to jump straight to when
+	// a post strings several cards together.
+	return '<!--necro-card-->'
+		. '<article class="necro-card necro-card--' . esc_attr($size) . '" aria-label="'
+				. esc_attr(sprintf(__('%s, Necromunda fighter card', 'spudworks-mag'), $name)) . '">'
+			. $headerHtml
+			. '<div class="necro-card__stats">' . $statsHtml . '</div>'
+			. $weaponsHtml
+			. $metaHtml
+		. '</article>'
+		. '<!--/necro-card-->';
+}
+add_shortcode('necro-card', 'spudmagNecroCardShortcode');
+
+/**
+ * Group consecutive rendered [necro-card]s into a centered, wrapping row so a
+ * writer gets a grid just by placing cards back to back — no wrapper shortcode
+ * needed. Runs after do_shortcode (11); the sentinel comments each card emits
+ * let this find a run's true start/end regardless of the tables and rows
+ * nested inside, sidestepping having to count nested <div>s.
+ */
+function spudmagRenderNecroCardRows($content) {
+	if (strpos($content, '<!--necro-card-->') === false) {
+		return $content;
+	}
+
+	return preg_replace_callback(
+		'/(?:\s*<!--necro-card-->.*?<!--\/necro-card-->\s*)+/s',
+		function ($m) {
+			$cards = str_replace(array('<!--necro-card-->', '<!--/necro-card-->'), '', $m[0]);
+			return '<div class="necro-card-row">' . trim($cards) . '</div>';
+		},
+		$content
+	);
+}
+add_filter('the_content', 'spudmagRenderNecroCardRows', 100);

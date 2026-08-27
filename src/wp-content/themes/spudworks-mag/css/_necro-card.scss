@@ -1,0 +1,319 @@
+// [necro-card] / [necro-weapon]: a Necromunda-style fighter stat card. Leans
+// into the game's own hazard-stripe branding rather than reskinning the
+// reference app's light card — dark-gray panel, light-gray text, the theme's
+// hazard stripe as a thick cap over the name/role/value band, thinning to a
+// hairline the rest of the way round like a picture frame.
+
+@use 'variables' as *;
+@use 'grid' as *;
+@use 'hazard' as *;
+
+$necro-bg:        #2a2c32; // dark gray, lighter than $ink-panel — a "readout" panel, not ink
+$necro-text:      #cfd1d6; // light gray primary text
+$necro-text-dim:  #8d8f96; // dim gray for labels/meta
+$necro-row-alt:   rgba(255, 255, 255, 0.035); // weapon-table zebra striping
+$necro-highlight: rgba($hazard-yellow, 0.12); // secondary stat row tint
+$necro-padding:   1.4rem 1.5rem 1.6rem;
+
+// --- Card shell --------------------------------------------------------
+.necro-card {
+	position: relative;
+	background: $necro-bg;
+	border: 1px solid $hazard-yellow;
+	border-radius: 4px;
+	overflow: hidden; // lets the top band + zebra rows meet the rounded corners cleanly
+	padding: 0 0 1.5rem;
+	color: $necro-text;
+	font-family: $sans;
+
+	// The card is sized by its `size` attribute independently of the viewport
+	// (a half card on a phone can be just as narrow as a half card on a
+	// tablet-width showcase-sidebar layout), so how tight the layout needs to
+	// be is a function of the card's own rendered width, not the page's — a
+	// container query, not a viewport media query, is the right tool.
+	container-type: inline-size;
+
+	// Horizontal padding for the header/stats/weapons/meta sections, eased
+	// down as the card itself narrows so there's more room for the stat
+	// columns (see the container queries at the bottom of this file).
+	--necro-pad-x: 1.5rem;
+
+	&__band {
+		@include hazard-stripes(12px, 26px);
+	}
+
+	// --- Header: name / role / credit badge -------------------------------
+	&__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1.1rem var(--necro-pad-x) 1.3rem;
+	}
+
+	&__identity {
+		min-width: 0; // let long names/roles ellipsize-wrap rather than push the badge off
+	}
+
+	&__name {
+		font-family: $serif;
+		font-weight: $weight-black;
+		font-size: 1.5rem;
+		line-height: 1.15;
+		color: $paper;
+	}
+
+	// `.article-content h2, h3, h4 { margin-top: 1.8em }` (_single.scss) is a
+	// class+element selector that outranks a bare `.necro-card__name`, so the
+	// margin reset needs the extra ancestor class here to actually win — the
+	// __identity/__value boxes were already top-aligned; it's this margin
+	// pushing the name down inside its own box that looked like a misalign.
+	.necro-card__name {
+		margin: 0;
+	}
+
+	&__role {
+		margin: 0.2rem 0 0;
+		font-size: 0.92rem;
+		color: $necro-text-dim;
+	}
+
+	&__value {
+		flex: 0 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 4.4rem;
+		height: 4.4rem;
+		border-radius: 50%;
+		border: 2px solid $hazard-yellow;
+		background: $necro-bg;
+		text-align: center;
+
+		&-number {
+			font-weight: $weight-bold;
+			font-size: 1.15rem;
+			line-height: 1.1;
+			color: $paper;
+		}
+
+		&-label {
+			font-size: 0.6rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: $necro-text-dim;
+		}
+	}
+
+	// --- Stat rows ----------------------------------------------------------
+	// Two independent tables (primary 9-up, secondary 5-up) rather than one
+	// 14-column row: a table row can't reflow its own columns, but two
+	// grouped tables can drop to a line of their own when the card is narrow
+	// (see the container query at the bottom of this file) instead of forcing
+	// a horizontal scrollbar.
+	&__stats {
+		padding: 0 var(--necro-pad-x);
+		overflow-x: auto; // safety net if even a single group can't fit
+	}
+
+	// Wide state: the two tables stretch to fill the row between them — flex-
+	// grow proportional to each table's own column count (9 vs 5) so a column
+	// is the same width whichever group it's in, reading as one continuous,
+	// evenly spaced band (the reference card's look) rather than two
+	// separate clusters with dead space between them. table-layout: fixed is
+	// what makes a table's columns actually divide up 100% of its own width
+	// instead of shrinking to content.
+	&__stat-groups {
+		display: flex;
+		flex-direction: row;
+		gap: 0.5rem;
+	}
+
+	&__stat-group {
+		table-layout: fixed;
+		width: 100%;
+		border-collapse: collapse;
+		text-align: center;
+
+		&--primary {
+			flex: 9;
+		}
+
+		&--secondary {
+			flex: 5;
+			background: $necro-highlight;
+			border-radius: 4px;
+		}
+
+		th,
+		td {
+			padding: 0.4rem 0.5rem;
+			font-size: 0.95rem;
+			white-space: nowrap;
+		}
+
+		th {
+			font-size: 0.7rem;
+			font-weight: $weight-bold;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: $necro-text-dim;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+		}
+
+		td {
+			font-weight: $weight-medium;
+			color: $paper;
+		}
+	}
+
+	// --- Weapons table --------------------------------------------------
+	&__weapons {
+		margin-top: 1.3rem;
+		padding: 0 var(--necro-pad-x);
+		overflow-x: auto;
+	}
+
+	&__weapon-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.88rem;
+
+		th,
+		td {
+			padding: 0.45rem 0.6rem;
+			text-align: center;
+			white-space: nowrap;
+		}
+
+		th {
+			font-size: 0.66rem;
+			font-weight: $weight-bold;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: $necro-text-dim;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+		}
+
+		td {
+			color: $necro-text;
+		}
+
+		// Nested here (rather than as a sibling rule) so this compiles to a
+		// descendant selector at least as specific as the `th, td` rule above
+		// — a bare `.necro-card__weapon-name` on its own loses that cascade
+		// fight and the centering never actually got overridden.
+		.necro-card__weapon-name,
+		.necro-card__weapon-traits {
+			text-align: left;
+			white-space: normal;
+		}
+	}
+
+	&__weapon-row:nth-child(even) {
+		background: $necro-row-alt;
+	}
+
+	// --- Wargear / Skills -------------------------------------------------
+	// A <dl> — Wargear/Skills are name/value pairs, not prose. Grid
+	// auto-placement into two columns naturally puts each dt+dd pair on its
+	// own row in source order, with no extra wrapper markup needed.
+	&__meta {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 0.6rem;
+		row-gap: 0.4rem;
+		margin: 1.2rem 0 0;
+		padding: 0 var(--necro-pad-x);
+		font-size: 0.92rem;
+	}
+
+	&__meta-label {
+		font-weight: $weight-bold;
+		color: $paper;
+	}
+
+	&__meta-value {
+		margin: 0;
+		color: $necro-text-dim;
+	}
+
+	// --- Narrow-card responses (container, not viewport, queries) ---------
+	// A half card can be just as narrow as a full card on a phone, regardless
+	// of the page's own viewport width, so these key off the card's own
+	// inline size.
+
+	// Ease the horizontal padding down in two steps as the card narrows,
+	// buying the stat columns more room before anything needs to wrap.
+	@container (max-width: 460px) {
+		& {
+			--necro-pad-x: 1rem;
+		}
+	}
+
+	@container (max-width: 300px) {
+		& {
+			--necro-pad-x: 0.65rem;
+		}
+	}
+
+	// Below this width the primary (9-up) and secondary (5-up) stat groups no
+	// longer comfortably sit side by side. Rather than let them wrap wherever
+	// they individually run out of room, stack them deliberately: the pair is
+	// centered as one block in the card, but the two groups stay left-aligned
+	// against each other within that block (not each independently centered,
+	// which would leave their differing widths staggered).
+	//
+	// Centered with `margin: 0 auto` on a `width: max-content` box rather than
+	// flex `justify-content: center` — a flex-centered child that's WIDER than
+	// its scrollable ancestor gets pushed half off the *left* edge, into
+	// negative scroll territory .necro-card__stats's overflow-x:auto can never
+	// scroll back to, permanently hiding the first column or two. `margin:
+	// auto` degrades safely instead: when the content doesn't fit, the
+	// over-constrained auto margins both resolve to 0 and it just left-aligns,
+	// so everything stays reachable by scrolling right.
+	@container (max-width: 480px) {
+		.necro-card__stat-groups {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			width: max-content;
+			margin: 0 auto;
+			gap: 0.6rem;
+		}
+
+		// Undo the wide-state stretch (table-layout: fixed + flex-grow) —
+		// wrapped, each table should size to its own content again, not
+		// fight the other for a share of a row it's no longer sharing.
+		.necro-card__stat-group {
+			table-layout: auto;
+			width: auto;
+			flex: none;
+		}
+	}
+}
+
+// --- Auto-grouped row of consecutive cards ------------------------------
+// Inserted by spudmagRenderNecroCardRows() around any run of adjacent
+// [necro-card]s so a writer gets a centered, wrapping grid just by placing
+// cards back to back — no wrapper shortcode needed.
+.necro-card-row {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: $gap;
+	margin: 2.5rem 0;
+
+	.necro-card {
+		flex: 0 0 100%;
+		max-width: 100%;
+	}
+
+	@include from($bp-md) {
+		.necro-card--half {
+			flex-basis: calc(50% - #{$gap} / 2);
+			max-width: calc(50% - #{$gap} / 2);
+		}
+	}
+}

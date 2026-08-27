@@ -1,8 +1,9 @@
 /**
  * spudWorks Magazine - Quicktags buttons for the post Text editor.
  *
- * Adds [multipart] and [author-note] insert buttons. The high priority numbers
- * place them after the default Quicktags set (which ends with "Close Tags").
+ * Adds insert buttons for all of the theme's editorial shortcodes. The high
+ * priority numbers place them after the default Quicktags set (which ends
+ * with "Close Tags").
  */
 (function () {
 	'use strict';
@@ -14,7 +15,7 @@
 	QTags.addButton(
 		'spudmag_multipart',
 		'multipart',
-		'[multipart prev-url="" prev-link="" next-url="" next-link=""]',
+		'[multipart prev-id="" prev-link="" next-id="" next-link=""]',
 		'[/multipart]',
 		'',
 		'Insert a multi-part navigation box',
@@ -83,5 +84,27 @@
 		'',
 		'Insert a side note',
 		206
+	);
+
+	QTags.addButton(
+		'spudmag_necro_card',
+		'necro-card',
+		'[necro-card size="full" name="" role="" value="" stat-m="" stat-ws="" stat-bs="" stat-s="" stat-t="" stat-w="" stat-i="" stat-a="" stat-sv="" stat-ld="" stat-cl="" stat-wil="" stat-int="" stat-xp="" wargear="" skills=""]',
+		'[/necro-card]',
+		'',
+		'Insert a Necromunda fighter card',
+		207
+	);
+
+	// Self-closing, so there is no end tag to insert — unlike every button
+	// above, this one only ever inserts its opening (and only) tag.
+	QTags.addButton(
+		'spudmag_necro_weapon',
+		'necro-weapon',
+		'[necro-weapon name="" stat-sr="" stat-lr="" stat-s="" stat-ap="" stat-l="" traits=""/]',
+		'',
+		'',
+		'Insert a necro-card weapon line',
+		208
 	);
 })();

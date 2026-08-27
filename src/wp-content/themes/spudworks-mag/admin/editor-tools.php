@@ -79,11 +79,12 @@ function spudmagEditorHelpTab() {
 
 	$help = '<p>' . esc_html__('spudWorks Magazine adds these shortcodes you can use in the post Text editor (the buttons sit after "Close Tags"):', 'spudworks-mag') . '</p>'
 		. '<h3>[multipart]</h3>'
-		. '<p>' . esc_html__('Links the parts of a multi-part post. Place it at the top and/or bottom of the post. Every attribute is optional; the box only appears when at least one URL is given, and each side shows only when its URL is present.', 'spudworks-mag') . '</p>'
-		. '<pre>[multipart prev-url="https://&hellip;" prev-link="The opening chapter" next-url="https://&hellip;" next-link="The next chapter"]Why you might want to start at the previous part.[/multipart]</pre>'
+		. '<p>' . esc_html__('Links the parts of a multi-part post. Place it at the top and/or bottom of the post. Every attribute is optional; the box only appears when at least one side resolves to a link.', 'spudworks-mag') . '</p>'
+		. '<pre>[multipart prev-id="123" next-id="456"]Why you might want to start at the previous part.[/multipart]</pre>'
 		. '<ul>'
-		. '<li><code>prev-url</code> / <code>next-url</code> — ' . esc_html__('the linked URLs (optional).', 'spudworks-mag') . '</li>'
-		. '<li><code>prev-link</code> / <code>next-link</code> — ' . esc_html__('the link text. Default "Previous Post" / "Next Post".', 'spudworks-mag') . '</li>'
+		. '<li><code>prev-id</code> / <code>next-id</code> — ' . esc_html__('the post ID to link. On each side an id wins over a url. The target must be published — a draft or scheduled post keeps that side hidden until it goes live, so a series can be linked up ahead of time.', 'spudworks-mag') . '</li>'
+		. '<li><code>prev-url</code> / <code>next-url</code> — ' . esc_html__('a linked URL (optional), used only when no id is given — e.g. for a link off-site.', 'spudworks-mag') . '</li>'
+		. '<li><code>prev-link</code> / <code>next-link</code> — ' . esc_html__('the link text. With an id, defaults to that post\'s title; with a url, defaults to "Previous Post" / "Next Post".', 'spudworks-mag') . '</li>'
 		. '<li>' . esc_html__('Text between the tags is an optional intro shown above the links.', 'spudworks-mag') . '</li>'
 		. '</ul>'
 		. '<h3>[author-note]</h3>'
@@ -124,6 +125,30 @@ function spudmagEditorHelpTab() {
 [aside title="On the Mk II"]A quick note off to the side.[/aside]</pre>'
 		. '<ul>'
 		. '<li><code>title</code> — ' . esc_html__('the box heading. Defaults to "An Aside"; use title="" for no heading.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[necro-card]</h3>'
+		. '<p>' . esc_html__('A Necromunda-style fighter stat card. name is the only required attribute; role and value show an em dash when left out. The wargear/skills lines and the weapons table are omitted entirely when there\'s nothing to show. Place cards back to back and they auto-group into a centred, wrapping row — no extra markup needed.', 'spudworks-mag') . '</p>'
+		. '<pre>[necro-card size="full" name="Trevor" role="Forge Boss (Champion)" value="160"
+    stat-m="4" stat-ws="3+" stat-bs="3+" stat-s="3" stat-t="4" stat-w="2" stat-i="3" stat-a="2" stat-sv="5+"
+    stat-ld="7" stat-cl="8" stat-wil="6" stat-int="6" stat-xp="37"
+    wargear="Respirator" skills="Inspiring, Nerves of Steel"]
+[necro-weapon name="Power hammer" stat-sr="E" stat-lr="-" stat-s="S" stat-ap="-2" stat-l="2" traits="Breaching (6+), Concussive (6+), Melee"/]
+[necro-weapon name="Stub gun" stat-sr="6" stat-lr="12" stat-s="3" stat-ap="-" stat-l="1" traits="Light"/]
+[/necro-card]</pre>'
+		. '<ul>'
+		. '<li><code>size</code> — ' . esc_html__('full (default) or half, of the content column. Half collapses to full on narrow screens.', 'spudworks-mag') . '</li>'
+		. '<li><code>name</code> / <code>role</code> / <code>value</code> — ' . esc_html__('the fighter\'s name (required), role, and credit cost.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('Primary row: stat-m, stat-ws, stat-bs, stat-s, stat-t, stat-w, stat-i, stat-a, stat-sv.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('Secondary row: stat-ld, stat-cl, stat-wil, stat-int, stat-xp.', 'spudworks-mag') . '</li>'
+		. '<li><code>wargear</code> / <code>skills</code> — ' . esc_html__('optional comma-separated lists.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[necro-weapon]</h3>'
+		. '<p>' . esc_html__('One weapon line, nested inside [necro-card] — it only does anything there. Self-closing; every attribute is optional and left blank when omitted.', 'spudworks-mag') . '</p>'
+		. '<pre>[necro-weapon name="Stub gun" stat-sr="6" stat-lr="12" stat-s="3" stat-ap="-" stat-l="1" traits="Light"/]</pre>'
+		. '<ul>'
+		. '<li><code>stat-sr</code> / <code>stat-lr</code> — ' . esc_html__('short/long range. A plain whole number gets a trailing " (e.g. 6 becomes 6"); anything else (e.g. "E" for engage) is left as-is.', 'spudworks-mag') . '</li>'
+		. '<li><code>stat-s</code> / <code>stat-ap</code> / <code>stat-l</code> — ' . esc_html__('strength, armour piercing, and load/ammo.', 'spudworks-mag') . '</li>'
+		. '<li><code>traits</code> — ' . esc_html__('optional comma-separated list.', 'spudworks-mag') . '</li>'
 		. '</ul>';
 
 	$screen->add_help_tab(array(
