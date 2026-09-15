@@ -42,6 +42,70 @@ function spudmagGetTemplate($postId) {
 }
 
 /**
+ * The chosen page template for a page: 'default' or 'landing'. Unlike posts
+ * (spudmagGetTemplate() defaults unset to 'showcase'), an unset page always
+ * falls back to 'default' so every existing page keeps its current look.
+ */
+function spudmagGetPageTemplate($postId) {
+	$value = get_post_meta($postId, METAPAGETEMPLATE, true);
+	$allowed = array('default', 'landing');
+	return in_array($value, $allowed, true) ? $value : 'default';
+}
+
+/**
+ * The two Landing Page sidebar galleries. Always returns exactly two entries
+ * — array('title' => string, 'ids' => int[], 'columns' => int 1-6) — so
+ * callers never need to check array shape, only whether 'ids' is empty.
+ */
+function spudmagGetPageGalleries($postId) {
+	$stored = get_post_meta($postId, METAGALLERIES, true);
+	$stored = is_array($stored) ? $stored : array();
+
+	$galleries = array();
+	for ($i = 0; $i < 2; $i++) {
+		$entry = isset($stored[$i]) && is_array($stored[$i]) ? $stored[$i] : array();
+		$ids = isset($entry['ids']) && is_array($entry['ids']) ? array_map('intval', $entry['ids']) : array();
+		$columns = isset($entry['columns']) ? (int) $entry['columns'] : 2;
+		$galleries[] = array(
+			'title'   => isset($entry['title']) ? (string) $entry['title'] : '',
+			'ids'     => array_values(array_filter($ids)),
+			'columns' => max(1, min(6, $columns ?: 2))
+		);
+	}
+	return $galleries;
+}
+
+/**
+ * The hand-picked "related articles" list for a Landing Page, in curator
+ * order. Filters to posts that are still published, so a later unpublish or
+ * delete quietly drops the entry instead of leaving a dead card.
+ *
+ * @return int[]
+ */
+function spudmagGetPageRelated($postId) {
+	$stored = get_post_meta($postId, METARELATED, true);
+	$stored = is_array($stored) ? $stored : array();
+
+	$related = array();
+	foreach ($stored as $id) {
+		$id = (int) $id;
+		if ($id > 0 && get_post_status($id) === 'publish' && !in_array($id, $related, true)) {
+			$related[] = $id;
+		}
+	}
+	return $related;
+}
+
+/**
+ * The heading for a Landing Page's related-articles section. Falls back to a
+ * sensible default when left blank.
+ */
+function spudmagGetPageRelatedTitle($postId) {
+	$title = trim((string) get_post_meta($postId, METARELATEDTITLE, true));
+	return $title !== '' ? $title : __('Related Articles', 'spudworks-mag');
+}
+
+/**
  * The optional secondary headline for a post (empty string if none).
  */
 function spudmagGetSubhead($postId) {

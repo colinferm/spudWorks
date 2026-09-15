@@ -323,6 +323,17 @@
 		min-height: 240px;
 	}
 
+	// Landing Page related-articles list: several overlay cards stacked with no
+	// surrounding grid (card-grid normally supplies this via `gap`), so give
+	// them their own spacing.
+	.widget--related .card {
+		margin-bottom: 1.2rem;
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+	}
+
 	// Tag cloud: left at its default look until hovered, then each tag animates
 	// into the post tag-chip treatment (left border + inverse colours). Space is
 	// reserved up front so the hover state doesn't reflow its neighbours.

@@ -107,12 +107,24 @@ class Spudmag_Featured_Post_Widget extends WP_Widget {
 }
 
 /**
- * AJAX: return up to 10 published posts matching the typed title.
+ * AJAX: return up to 10 published posts matching the typed query, by title OR
+ * tag name — so typing "escher" surfaces posts tagged Escher even when the
+ * word isn't in the title, which core's 's' search (title/excerpt/content
+ * only) can't do. A raw query rather than get_posts()/WP_Query: matching tag
+ * names needs a join get_posts() has no argument for, and the picker only
+ * ever needs an id + a title, not a fully hydrated WP_Post per row.
+ *
+ * Also backs the Landing Page related-articles picker (admin/page-meta.php),
+ * so the capability check is 'edit_posts' rather than the widgets-only
+ * 'edit_theme_options' — any Editor/Author building a page needs this, not
+ * just an Administrator on the Widgets screen.
  */
 function spudmagFeaturedSearch() {
+	global $wpdb;
+
 	check_ajax_referer('spudmag_featured_search', 'nonce');
 
-	if (!current_user_can('edit_theme_options')) {
+	if (!current_user_can('edit_posts')) {
 		wp_send_json_error(array(), 403);
 	}
 
@@ -120,17 +132,31 @@ function spudmagFeaturedSearch() {
 	$results = array();
 
 	if ($query !== '') {
-		$posts = get_posts(array(
-			's'                => $query,
-			'post_type'        => 'post',
-			'post_status'      => 'publish',
-			'posts_per_page'   => 10,
-			'suppress_filters' => false
+		$like = '%' . $wpdb->esc_like($query) . '%';
+
+		// LEFT JOIN to post_tag term relationships so a post with no matching
+		// tag still matches on title alone; GROUP BY collapses a post with
+		// several matching tags back to one row. Title matches are ranked
+		// above tag-only matches, then by recency.
+		$rows = $wpdb->get_results($wpdb->prepare(
+			"SELECT p.ID, p.post_title
+			FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID
+			LEFT JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = 'post_tag'
+			LEFT JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+			WHERE p.post_type = 'post'
+				AND p.post_status = 'publish'
+				AND (p.post_title LIKE %s OR t.name LIKE %s)
+			GROUP BY p.ID, p.post_title
+			ORDER BY (p.post_title LIKE %s) DESC, p.post_date DESC
+			LIMIT 10",
+			$like, $like, $like
 		));
-		foreach ($posts as $post) {
+
+		foreach ($rows as $row) {
 			$results[] = array(
-				'id'    => $post->ID,
-				'title' => get_the_title($post)
+				'id'    => (int) $row->ID,
+				'title' => $row->post_title
 			);
 		}
 	}

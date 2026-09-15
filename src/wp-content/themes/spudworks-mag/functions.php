@@ -24,6 +24,10 @@ define("METARATING", "_spudmag_rating");
 define("METAREVIEWITEM", "_spudmag_review_item");
 define("METAREVIEWTYPE", "_spudmag_review_type");
 define("METATODOS", "_spudmag_todos");
+define("METAPAGETEMPLATE", "_spudmag_page_template");
+define("METAGALLERIES", "_spudmag_galleries");
+define("METARELATED", "_spudmag_related");
+define("METARELATEDTITLE", "_spudmag_related_title");
 
 // Theme directory + URI, resolved per-site so the theme is multisite-safe.
 define("THEMEDIR", get_template_directory());
@@ -40,6 +44,7 @@ require_once THEMEDIR . '/lib/calendar-feed.php';
 
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
+	require_once THEMEDIR . '/admin/page-meta.php';
 	require_once THEMEDIR . '/admin/editor-tools.php';
 	require_once THEMEDIR . '/admin/todos.php';
 	require_once THEMEDIR . '/admin/todos-page.php';

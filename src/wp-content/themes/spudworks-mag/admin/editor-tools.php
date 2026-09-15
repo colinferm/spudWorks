@@ -65,6 +65,30 @@ function spudmagAdminAssets($hook) {
 			'nonce'   => wp_create_nonce('spudmag_featured_search')
 		));
 	}
+
+	// Landing Page sidebar builder: the page editor only, never posts, so the
+	// media modal — this theme's first use of it — stays off every other
+	// screen. Reuses the same spudmag_featured_search endpoint (+ nonce
+	// action) as the Featured Post widget for the related-articles search.
+	if ($hook === 'post.php' || $hook === 'post-new.php') {
+		$screen = get_current_screen();
+		if ($screen && $screen->post_type === 'page') {
+			wp_enqueue_media();
+			wp_enqueue_script(
+				'spudmag-landing',
+				THEMEURI . '/js/admin-landing.js',
+				array('media-editor'),
+				THEMEVERSION,
+				true
+			);
+			wp_localize_script('spudmag-landing', 'spudmagLanding', array(
+				'ajaxUrl'       => admin_url('admin-ajax.php'),
+				'nonce'         => wp_create_nonce('spudmag_featured_search'),
+				'galleryTitle'  => __('Select Gallery Images', 'spudworks-mag'),
+				'galleryButton' => __('Use these images', 'spudworks-mag')
+			));
+		}
+	}
 }
 add_action('admin_enqueue_scripts', 'spudmagAdminAssets');
 
