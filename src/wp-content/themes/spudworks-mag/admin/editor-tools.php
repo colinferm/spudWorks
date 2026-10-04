@@ -173,6 +173,18 @@ function spudmagEditorHelpTab() {
 		. '<li><code>stat-sr</code> / <code>stat-lr</code> — ' . esc_html__('short/long range. A plain whole number gets a trailing " (e.g. 6 becomes 6"); anything else (e.g. "E" for engage) is left as-is.', 'spudworks-mag') . '</li>'
 		. '<li><code>stat-s</code> / <code>stat-ap</code> / <code>stat-l</code> — ' . esc_html__('strength, armour piercing, and load/ammo.', 'spudworks-mag') . '</li>'
 		. '<li><code>traits</code> — ' . esc_html__('optional comma-separated list.', 'spudworks-mag') . '</li>'
+		. '</ul>'
+		. '<h3>[archive-feature]</h3>'
+		. '<p>' . esc_html__('A large graphical link box for a hand-built archive page — image, headline, date, and optional intro text. Every attribute is optional. With link-id, the url/headline/date/image all default from that post; any other attribute overrides just that one piece. link-id must point at a published post or the whole box renders nothing, the same rule [multipart]\'s prev-id/next-id uses — so a run of these can be built ahead of a publish schedule and light up on their own. Without link-id there\'s no post to pull a date from, so the date line is simply left out.', 'spudworks-mag') . '</p>'
+		. '<pre>[archive-feature link-id="123"]A line introducing this piece.[/archive-feature]
+[archive-feature link-url="https://…" link-text="An external piece" img-url="https://…"]No post behind this one.[/archive-feature]</pre>'
+		. '<ul>'
+		. '<li><code>link-id</code> — ' . esc_html__('a post ID. Wins over link-url/link-text; must be published.', 'spudworks-mag') . '</li>'
+		. '<li><code>link-url</code> / <code>link-text</code> — ' . esc_html__('the URL and headline, used directly when there\'s no link-id, or as an override when there is.', 'spudworks-mag') . '</li>'
+		. '<li><code>img-url</code> — ' . esc_html__('shows that image as-is (no thumbnail processing). Takes priority over img-id.', 'spudworks-mag') . '</li>'
+		. '<li><code>img-id</code> — ' . esc_html__('a media library attachment ID, shown at the proper cropped thumbnail size.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('With neither img-url nor img-id, link-id\'s own featured image is used; with no image at all, a hazard-striped placeholder fills the slot.', 'spudworks-mag') . '</li>'
+		. '<li>' . esc_html__('Text between the tags is an optional line introducing the piece.', 'spudworks-mag') . '</li>'
 		. '</ul>';
 
 	$screen->add_help_tab(array(

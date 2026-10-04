@@ -4,7 +4,7 @@
  *
  * Layout, top to bottom:
  *   1. Prominent masthead with the site name.
- *   2. A pinned post standing alone full-width (only when one is pinned).
+ *   2. A featured (sticky) post standing alone full-width (only when one exists).
  *   3. A strip of 2-3 featured pieces.
  *   4. A grid of 10-12 items in varied box shapes for visual interest.
  *
@@ -13,7 +13,7 @@
 get_header();
 
 $home = spudmagHomeItems(16);
-$pinned = $home['pinned'];
+$heroId = $home['featured'];
 $items = $home['items'];
 
 // First three items make up the featured strip; the rest fill the varied grid.
@@ -30,9 +30,9 @@ $grid = array_slice($items, 3, 13);
 	<span class="hazard-accent" aria-hidden="true"></span>
 </section>
 
-<?php if ($pinned) : ?>
+<?php if ($heroId) : ?>
 	<section class="home-pinned container">
-		<?php get_template_part('templates/card-pinned', '', array('postId' => $pinned->ID)); ?>
+		<?php get_template_part('templates/card-pinned', '', array('postId' => $heroId)); ?>
 	</section>
 <?php endif; ?>
 

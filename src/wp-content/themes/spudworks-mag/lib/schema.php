@@ -354,7 +354,10 @@ function spudmagSchemaGraph() {
 	} elseif (is_front_page() || is_home()) {
 		$anchorUrl = home_url('/');
 		$home      = spudmagHomeItems(12);
-		$posts     = array_filter(array_merge(array($home['pinned']), $home['items']));
+		$posts     = array_filter(array_merge(
+			array($home['featured']),
+			wp_list_pluck($home['items'], 'ID')
+		));
 
 		$graph[] = array(
 			'@type'      => 'CollectionPage',

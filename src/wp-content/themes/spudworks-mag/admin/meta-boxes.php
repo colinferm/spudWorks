@@ -6,7 +6,7 @@
  * display time:
  *   - Template selector  -> METATEMPLATE  (default | fiction | showcase)
  *   - Secondary headline -> METASUBHEAD   (free text shown under the headline)
- *   - Pinned             -> METAPINNED    (promotes the post on the home page)
+ *   - Featured           -> core sticky   (promotes the post on the home page)
  */
 
 /**
@@ -32,7 +32,7 @@ function spudmagRenderMetaBox($post) {
 
 	$template = spudmagGetTemplate($post->ID);
 	$subhead = spudmagGetSubhead($post->ID);
-	$pinned = spudmagIsPinned($post->ID);
+	$sticky = is_sticky($post->ID);
 	$rating = spudmagGetRating($post->ID);
 	$reviewItem = spudmagGetReviewItem($post->ID);
 	$reviewType = spudmagGetReviewType($post->ID);
@@ -59,9 +59,9 @@ function spudmagRenderMetaBox($post) {
 		<input type="text" name="spudmag_subhead" id="spudmag-subhead" class="widefat" value="<?php echo esc_attr($subhead); ?>">
 	</p>
 	<p>
-		<label for="spudmag-pinned">
-			<input type="checkbox" name="spudmag_pinned" id="spudmag-pinned" value="1" <?php checked($pinned, true); ?>>
-			<?php esc_html_e('Pin to top of home page', 'spudworks-mag'); ?>
+		<label for="spudmag-sticky">
+			<input type="checkbox" name="spudmag_sticky" id="spudmag-sticky" value="1" <?php checked($sticky, true); ?>>
+			<?php esc_html_e('Feature at the top of the home page', 'spudworks-mag'); ?>
 		</label>
 	</p>
 	<hr>
@@ -112,14 +112,10 @@ function spudmagSaveMeta($postId) {
 	$subhead = isset($_POST['spudmag_subhead']) ? wp_kses_post(wp_unslash($_POST['spudmag_subhead'])) : '';
 	update_post_meta($postId, METASUBHEAD, $subhead);
 
-	// A single pinned post at a time keeps the home page deterministic: setting
-	// one clears any previously pinned post on this site.
-	if (!empty($_POST['spudmag_pinned'])) {
-		spudmagClearPinned($postId);
-		update_post_meta($postId, METAPINNED, '1');
-	} else {
-		delete_post_meta($postId, METAPINNED);
-	}
+	// Sticky is applied in spudmagSaveSticky() below, on 'redirect_post_location'
+	// rather than here: core's own edit_post() sets sticky status from its own
+	// "Stick this post..." checkbox *after* save_post fires, so anything set
+	// here would just be overwritten by core a moment later.
 
 	// Review rating (0-5, half steps). A blank/zero value clears it so the post
 	// emits a plain Article rather than a Review with a 0 rating.
@@ -150,21 +146,33 @@ function spudmagSaveMeta($postId) {
 add_action('save_post', 'spudmagSaveMeta');
 
 /**
- * Remove the pinned flag from every post except $keepId.
+ * Apply the "Feature" checkbox as core sticky status.
+ *
+ * Can't do this from spudmagSaveMeta(): core's edit_post() applies its own
+ * "Stick this post to the front page" checkbox via stick_post()/unstick_post()
+ * *after* save_post fires, so it would immediately overwrite anything set
+ * there. redirect_post_location fires last — right before the post-save
+ * redirect, once edit_post() has already finished — so hooking it here gives
+ * our field the final, authoritative word instead of core's own checkbox
+ * (which stays in the UI, hidden, but has no effect).
  */
-function spudmagClearPinned($keepId) {
-	$pinned = get_posts(array(
-		'post_type'           => 'post',
-		'post_status'         => 'any',
-		'posts_per_page'      => -1,
-		'fields'              => 'ids',
-		'ignore_sticky_posts' => true,
-		'meta_key'            => METAPINNED,
-		'meta_value'          => '1'
-	));
-	foreach ($pinned as $id) {
-		if ((int) $id !== (int) $keepId) {
-			delete_post_meta($id, METAPINNED);
-		}
+function spudmagSaveSticky($location, $postId) {
+	if (!isset($_POST['spudmag_meta_nonce']) || !wp_verify_nonce($_POST['spudmag_meta_nonce'], 'spudmag_save_meta')) {
+		return $location;
 	}
+	// Mirrors core's own capability gate for sticky (see edit_post() in
+	// wp-admin/includes/post.php) — featuring a post promotes it site-wide,
+	// so it takes the same higher bar as editing others' posts.
+	if (get_post_type($postId) !== 'post' || !current_user_can('edit_others_posts') || !current_user_can('publish_posts')) {
+		return $location;
+	}
+
+	if (!empty($_POST['spudmag_sticky'])) {
+		stick_post($postId);
+	} else {
+		unstick_post($postId);
+	}
+
+	return $location;
 }
+add_filter('redirect_post_location', 'spudmagSaveSticky', 10, 2);

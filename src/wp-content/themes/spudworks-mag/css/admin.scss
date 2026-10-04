@@ -13,7 +13,10 @@
 @use 'variables' as *;
 
 // --- Admin rules -----------------------------------------------------------
-// (none yet — add formatting rules for admin screens here)
+
+// Sticky is set from the spudWorks Magazine meta box instead, so core's
+// duplicate checkbox in the Publish box is hidden to keep one control.
+#sticky-span { display: none; }
 
 .edcal_row {
 	/* .beforeToday, .todayAndAfter {

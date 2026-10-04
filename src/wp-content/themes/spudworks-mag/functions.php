@@ -19,7 +19,6 @@ define("THEMEDATEFORMAT", get_option('date_format'));
 // Post-meta keys, defined once so templates and admin agree on them.
 define("METATEMPLATE", "_spudmag_template");
 define("METASUBHEAD", "_spudmag_subhead");
-define("METAPINNED", "_spudmag_pinned");
 define("METARATING", "_spudmag_rating");
 define("METAREVIEWITEM", "_spudmag_review_item");
 define("METAREVIEWTYPE", "_spudmag_review_type");

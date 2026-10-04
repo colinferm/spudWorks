@@ -716,3 +716,114 @@ function spudmagRenderNecroCardRows($content) {
 	);
 }
 add_filter('the_content', 'spudmagRenderNecroCardRows', 100);
+
+/**
+ * [archive-feature] — a large graphical link box for hand-built archive
+ * Pages, reusing the theme's existing .card/.card--under visual system (the
+ * same one the homepage grid and sidebar widgets use) rather than a new
+ * component.
+ *
+ *   [archive-feature link-id="123" link-url="https://…" link-text="…"
+ *       img-url="https://…" img-id="456"]Optional intro text[/archive-feature]
+ *       Every attribute is optional. With link-id, the box's url/text/image/
+ *       date all default from that post — any of the other attributes
+ *       override just that one piece. link-id must point at a *published*
+ *       post or the whole box renders nothing (same hard gate as
+ *       [multipart]'s prev-id/next-id, so a run of these can be pre-built
+ *       ahead of a schedule and light up on their own as each piece
+ *       publishes). Without link-id there's no post to pull a date from, so
+ *       the date line is simply omitted. Image source priority: img-url (raw,
+ *       unprocessed) > img-id (a real attachment, proper responsive sizing)
+ *       > link-id's own featured image > a hazard-panel placeholder.
+ */
+function spudmagArchiveFeatureShortcode($atts, $content = null) {
+	$a = shortcode_atts(array(
+		'link-id'   => '',
+		'link-url'  => '',
+		'link-text' => '',
+		'img-id'    => '',
+		'img-url'   => ''
+	), $atts, 'archive-feature');
+
+	$linkId = (int) $a['link-id'];
+	$postResolved = false;
+
+	if ($linkId > 0) {
+		// An id wins over a url — and must be published, or the whole box is
+		// suppressed rather than degrading to the manual attributes. Same
+		// hard gate as spudmagMultipartLink(), for the same reason: it's what
+		// lets a run of these be pre-built ahead of a publish schedule.
+		if (get_post_status($linkId) !== 'publish') {
+			return '';
+		}
+		$permalink = get_permalink($linkId);
+		if (!$permalink) {
+			return '';
+		}
+		$postResolved = true;
+	}
+
+	$url = trim($a['link-url']);
+	if ($url === '' && $postResolved) {
+		$url = $permalink;
+	}
+
+	$text = trim($a['link-text']);
+	if ($text === '' && $postResolved) {
+		$text = get_the_title($linkId);
+	}
+
+	// Nothing to link, or nothing to call it -> render nothing.
+	if ($url === '' || $text === '') {
+		return '';
+	}
+
+	// Image: img-url (raw, unprocessed) > img-id (a real attachment) >
+	// link-id's own featured image > no image at all.
+	$imgUrl = trim($a['img-url']);
+	$imgId  = (int) $a['img-id'];
+	$mediaInner = '';
+	$hasImage = false;
+
+	if ($imgUrl !== '') {
+		$mediaInner = '<img src="' . esc_url($imgUrl) . '" alt="" loading="lazy">';
+		$hasImage = true;
+	} elseif ($imgId > 0) {
+		$mediaInner = wp_get_attachment_image($imgId, 'spudmagLandscape', false, array('loading' => 'lazy', 'alt' => ''));
+		$hasImage = $mediaInner !== '';
+	} elseif ($postResolved && has_post_thumbnail($linkId)) {
+		$mediaInner = get_the_post_thumbnail($linkId, 'spudmagLandscape', array('loading' => 'lazy', 'alt' => ''));
+		$hasImage = true;
+	}
+
+	$mediaClass = $hasImage ? 'card__media' : 'card__media card__media--hazard';
+	$mediaHtml = '<div class="' . esc_attr($mediaClass) . '" aria-hidden="true">' . $mediaInner . '</div>';
+
+	// Date: only when there's an actual post behind the box to pull one from.
+	$dateHtml = '';
+	if ($postResolved) {
+		$dateHtml = '<p class="card-byline"><time datetime="' . esc_attr(get_the_date('c', $linkId)) . '">'
+			. esc_html(get_the_date('', $linkId)) . '</time></p>';
+	}
+
+	$intro = is_string($content) ? trim($content) : '';
+	$introHtml = '';
+	if ($intro !== '') {
+		// A div, not a <p> — wpautop() already wraps the intro in its own <p>
+		// tag(s), same reason multipart's intro/featured-comment's preface
+		// both use a div wrapper rather than double up on paragraph tags.
+		$introHtml = '<div class="card-subhead">' . wpautop(wp_kses_post(do_shortcode($intro))) . '</div>';
+	}
+
+	return '<article class="card card--under archive-feature-card" aria-label="' . esc_attr($text) . '">'
+		. $mediaHtml
+		. '<div class="card__body">'
+			. '<div class="card-meta">'
+				. '<h2 class="card-title"><a class="stretched-link" href="' . esc_url($url) . '">' . esc_html($text) . '</a></h2>'
+				. $dateHtml
+				. $introHtml
+			. '</div>'
+		. '</div>'
+	. '</article>';
+}
+add_shortcode('archive-feature', 'spudmagArchiveFeatureShortcode');

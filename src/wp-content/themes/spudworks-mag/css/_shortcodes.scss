@@ -554,3 +554,32 @@ $notice-info:   $paper-dim;
 		color: $hazard-yellow;
 	}
 }
+
+// --- [archive-feature] ------------------------------------------------
+// Reuses the .card/.card--under system from _cards.scss wholesale (same
+// component the homepage grid and sidebar widgets already use) — this is
+// just the handful of overrides needed to use it standalone, inside
+// .article-content, for the first time.
+.archive-feature-card {
+	// Vertical rhythm between consecutive boxes, matching .multipart/.necro-card-row.
+	margin: 2.5rem 0;
+
+	// .article-content h2, h3, h4 { margin-top: 1.8em } (_single.scss) is a
+	// class+element selector that outranks the shared .card-title rule in
+	// _cards.scss (a bare single class) — the same specificity collision
+	// already fixed once for necro-card's h4. .card/.card-title have only
+	// ever been used outside .article-content before now (homepage, sidebar),
+	// so this is the first time the two have actually met.
+	.card-title {
+		margin: 0 0 0.3rem;
+	}
+
+	// The byline (date) now sits BEFORE the subhead (intro text) — the
+	// reverse of card-meta.php's usual title/subhead/byline order, per the
+	// image → headline → date → intro sequence asked for here. Without this,
+	// the byline's own margin-bottom: 0 and the subhead's margin-top: 0 would
+	// leave no gap between the date and the intro text.
+	.card-byline {
+		margin: 0.4rem 0 0.5rem;
+	}
+}

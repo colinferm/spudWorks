@@ -107,4 +107,14 @@
 		'Insert a necro-card weapon line',
 		208
 	);
+
+	QTags.addButton(
+		'spudmag_archive_feature',
+		'archive-feature',
+		'[archive-feature link-id="" link-url="" link-text="" img-url="" img-id=""]',
+		'[/archive-feature]',
+		'',
+		'Insert an archive feature box',
+		209
+	);
 })();

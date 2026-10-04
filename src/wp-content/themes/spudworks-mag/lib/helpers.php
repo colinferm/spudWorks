@@ -113,13 +113,6 @@ function spudmagGetSubhead($postId) {
 }
 
 /**
- * Whether a post is pinned to the top of the home page.
- */
-function spudmagIsPinned($postId) {
-	return (bool) get_post_meta($postId, METAPINNED, true);
-}
-
-/**
  * The review rating for a post on a 0-5 scale (0.0 when unset/blank). Only
  * meaningful for posts in the Reviews category; used to emit a schema Review.
  */
@@ -259,42 +252,50 @@ function spudmagHasByline($postId) {
 }
 
 /**
- * Posts for the home grid: the pinned post (if any) is returned first,
- * followed by the most recent posts, excluding the pinned one.
+ * Posts for the home grid: the featured post (if any) is returned first,
+ * followed by the most recent posts, excluding the featured one.
  *
- * Returns an array with keys 'pinned' (WP_Post|null) and 'items' (WP_Post[]).
+ * The featured slot is the newest *published* sticky post, so a sticky post
+ * scheduled ahead takes over the hero by itself once its date passes.
+ *
+ * Returns an array with keys 'featured' (int post ID, 0 when none) and
+ * 'items' (WP_Post[]).
  */
 function spudmagHomeItems($count = 12) {
-	$pinned = null;
+	global $wpdb;
 
-	$pinnedQuery = new WP_Query(array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'posts_per_page'      => 1,
-		'ignore_sticky_posts' => true,
-		'meta_key'            => METAPINNED,
-		'meta_value'          => '1',
-		'no_found_rows'       => true
-	));
-	if ($pinnedQuery->have_posts()) {
-		$pinned = $pinnedQuery->posts[0];
+	$featuredId = 0;
+	$stickyIds = get_option('sticky_posts');
+
+	// Only the ID is needed downstream, so this stays a single lean lookup
+	// rather than a WP_Query that would hydrate a whole post to be thrown away.
+	if (is_array($stickyIds) && !empty($stickyIds)) {
+		$placeholders = implode(',', array_fill(0, count($stickyIds), '%d'));
+
+		$featuredId = (int) $wpdb->get_var($wpdb->prepare(
+			"SELECT ID
+			FROM {$wpdb->posts}
+			WHERE post_type = 'post'
+				AND post_status = 'publish'
+				AND ID IN ($placeholders)
+			ORDER BY post_date DESC
+			LIMIT 1",
+			$stickyIds
+		));
 	}
-	wp_reset_postdata();
-
-	$exclude = $pinned ? array($pinned->ID) : array();
 
 	$itemsQuery = new WP_Query(array(
 		'post_type'           => 'post',
 		'post_status'         => 'publish',
 		'posts_per_page'      => $count,
 		'ignore_sticky_posts' => true,
-		'post__not_in'        => $exclude,
+		'post__not_in'        => $featuredId ? array($featuredId) : array(),
 		'no_found_rows'       => true
 	));
 	$items = $itemsQuery->posts;
 	wp_reset_postdata();
 
-	return array('pinned' => $pinned, 'items' => $items);
+	return array('featured' => $featuredId, 'items' => $items);
 }
 
 /**
