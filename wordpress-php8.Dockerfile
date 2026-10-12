@@ -51,6 +51,17 @@ RUN printf "[xdebug] \
 
 RUN printf "error_reporting=E_ALL" > /usr/local/etc/php/conf.d/error_reporting.ini
 
+# Route PHP mail() to the Mailpit container (dev only — prod uses its SMTP plugin)
+RUN apt-get install -y msmtp --no-install-recommends \
+  && printf "account default\
+\nhost mailpit\
+\nport 1025\
+\nauth off\
+\ntls off\
+\nfrom wordpress@spudworks.localhost" > /etc/msmtprc \
+  && chmod 644 /etc/msmtprc \
+  && printf "sendmail_path = \"/usr/bin/msmtp -t\"" > /usr/local/etc/php/conf.d/mail.ini
+
 # Set up Gulp to process SCSS
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
   && apt-get install -y nodejs \
@@ -59,7 +70,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
 
 RUN mkdir -p /usr/src/spudworks
 COPY ./build/package.json /usr/src/spudworks
-COPY ./build/local.json /usr/src/spudworks
 COPY ./build/gulpfile.js /usr/src/spudworks
 COPY ./build/wp-config.php /var/www/html/
 COPY ./build/htaccess /var/www/html/.htaccess

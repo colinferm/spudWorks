@@ -39,6 +39,7 @@ require_once THEMEDIR . '/lib/shortcodes.php';
 require_once THEMEDIR . '/lib/widget-featured-post.php';
 require_once THEMEDIR . '/lib/comments.php';
 require_once THEMEDIR . '/lib/comment-security.php';
+require_once THEMEDIR . '/lib/email-functions.php';
 require_once THEMEDIR . '/lib/calendar-feed.php';
 
 if (is_admin()) {

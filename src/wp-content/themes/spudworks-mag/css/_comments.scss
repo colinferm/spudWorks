@@ -209,6 +209,35 @@
 	color: $paper-dim;
 }
 
+// Checkbox rows: core's cookies consent and our reply-notification opt-in
+// (lib/email-functions.php). Undo the uppercase field-label treatment so each
+// reads as a sentence beside its checkbox.
+.comment-form .comment-form-cookies-consent,
+.comment-form .comment-form-notify {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin: 0;
+
+	input[type="checkbox"] {
+		flex: none;
+		width: 1rem;
+		height: 1rem;
+		margin: 0;
+		accent-color: $hazard-yellow;
+	}
+
+	label {
+		margin: 0;
+		font-size: 0.85rem;
+		font-weight: $weight-regular;
+		letter-spacing: normal;
+		text-transform: none;
+		color: $paper-dim;
+		cursor: pointer;
+	}
+}
+
 .form-submit {
 	margin: 0;
 }
