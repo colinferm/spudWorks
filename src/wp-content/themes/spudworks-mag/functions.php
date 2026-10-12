@@ -50,6 +50,7 @@ if (is_admin()) {
 	require_once THEMEDIR . '/admin/todos-page.php';
 	require_once THEMEDIR . '/admin/todos-dashboard.php';
 	require_once THEMEDIR . '/admin/calendar-settings.php';
+	require_once THEMEDIR . '/admin/comment-bulk-email.php';
 }
 
 /**

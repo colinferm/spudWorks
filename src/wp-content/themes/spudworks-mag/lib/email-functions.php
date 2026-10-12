@@ -210,11 +210,16 @@ function spudmagSendHeldEmail($comment) {
 
 /**
  * "Your comment is live." Sent once per comment, however many times it is
- * unapproved and re-approved.
+ * unapproved and re-approved. Returns what happened — 'sent', 'failed',
+ * 'exempt' or 'already' — for the admin bulk action's tally.
  */
 function spudmagSendApprovedEmail($comment) {
-	if (spudmagIsExemptCommenter($comment) || get_comment_meta($comment->comment_ID, SPUDMAG_APPROVED_SENT_META, true)) {
-		return;
+	if (spudmagIsExemptCommenter($comment)) {
+		return 'exempt';
+	}
+
+	if (get_comment_meta($comment->comment_ID, SPUDMAG_APPROVED_SENT_META, true)) {
+		return 'already';
 	}
 
 	$vars = spudmagCommentMailVars($comment);
@@ -232,9 +237,12 @@ function spudmagSendApprovedEmail($comment) {
 		$vars
 	);
 
-	if ($sent) {
-		update_comment_meta($comment->comment_ID, SPUDMAG_APPROVED_SENT_META, 1);
+	if (!$sent) {
+		return 'failed';
 	}
+
+	update_comment_meta($comment->comment_ID, SPUDMAG_APPROVED_SENT_META, 1);
+	return 'sent';
 }
 
 /**
