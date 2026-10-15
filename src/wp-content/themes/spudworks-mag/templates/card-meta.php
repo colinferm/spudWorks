@@ -37,5 +37,6 @@ $permalink = get_permalink($postId);
 			<span class="card-byline__sep" aria-hidden="true">&middot;</span>
 		<?php endif; ?>
 		<time datetime="<?php echo esc_attr(get_the_date('c', $postId)); ?>"><?php echo esc_html(get_the_date('', $postId)); ?></time>
+		<?php echo spudmagCommentBadge($postId); ?>
 	</p>
 </div>

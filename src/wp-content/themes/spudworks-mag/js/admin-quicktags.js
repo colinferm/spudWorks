@@ -89,7 +89,7 @@
 	QTags.addButton(
 		'spudmag_necro_card',
 		'necro-card',
-		'[necro-card size="full" name="" role="" value="" stat-m="" stat-ws="" stat-bs="" stat-s="" stat-t="" stat-w="" stat-i="" stat-a="" stat-sv="" stat-ld="" stat-cl="" stat-wil="" stat-int="" stat-xp="" wargear="" skills=""]',
+		'[necro-card size="full" ver="" name="" role="" value="" stat-m="" stat-ws="" stat-bs="" stat-s="" stat-t="" stat-w="" stat-i="" stat-a="" stat-sv="" stat-ld="" stat-cl="" stat-wil="" stat-int="" stat-xp="" wargear="" skills=""]',
 		'[/necro-card]',
 		'',
 		'Insert a Necromunda fighter card',
@@ -101,7 +101,7 @@
 	QTags.addButton(
 		'spudmag_necro_weapon',
 		'necro-weapon',
-		'[necro-weapon name="" stat-sr="" stat-lr="" stat-s="" stat-ap="" stat-l="" traits=""/]',
+		'[necro-weapon ver="" name="" stat-sr="" stat-lr="" stat-sm="" stat-lm="" stat-s="" stat-ap="" stat-d="" stat-am="" traits=""/]',
 		'',
 		'',
 		'Insert a necro-card weapon line',

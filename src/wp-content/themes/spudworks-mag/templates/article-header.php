@@ -24,6 +24,7 @@ $isPage = isset($args['is_page']) ? (bool) $args['is_page'] : false;
 			<span class="article-byline__author"><?php the_author(); ?></span>
 			<span class="article-byline__sep" aria-hidden="true">&middot;</span>
 			<time datetime="<?php echo esc_attr(get_the_date('c')); ?>"><?php echo esc_html(get_the_date()); ?></time>
+			<?php echo spudmagCommentBadge($postId, true); ?>
 		</p>
 	<?php endif; ?>
 </header>

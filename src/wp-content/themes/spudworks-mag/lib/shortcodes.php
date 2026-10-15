@@ -17,12 +17,15 @@
  *       A styled aside headed "A note from the author, NAME". NAME defaults to
  *       the post author; the optional attribute overrides it (e.g. guest notes).
  *
- *   [necro-card size="full|half" name="..." role="..." value="..." stat-*="..." wargear="..." skills="..."]
+ *   [necro-card size="full|half|min" name="..." role="..." value="..." stat-*="..." wargear="..." skills="..."]
  *       [necro-weapon name="..." stat-sr="..." stat-lr="..." stat-s="..." stat-ap="..." stat-l="..." traits="..."/]
  *   [/necro-card]
- *       A Necromunda-style fighter stat card. name is the only required
- *       attribute; role/value show an em dash when omitted; wargear/skills and
- *       the weapons table are omitted entirely when there's nothing to show.
+ *       At full/half, name is the only required attribute; role/value show an
+ *       em dash when omitted. At size="min" — a compact single-line card for
+ *       scanning many stat lines at once — name is optional as long as role
+ *       is given (name and role fold onto one line); the value badge drops
+ *       its "Credits" caption. wargear/skills and the weapons table are
+ *       omitted entirely when there's nothing to show.
  *       Consecutive cards in a post auto-group into a centered, wrapping row.
  */
 
@@ -468,6 +471,16 @@ function spudmagRenderToc($content) {
 add_filter('the_content', 'spudmagRenderToc', 99);
 
 /**
+ * Normalize a ver="" attribute (case-insensitive) to "N23" or "N26" — the
+ * ruleset switch [necro-card]/[necro-weapon] use to decide which stat
+ * columns to show. Anything other than N23 (including blank) resolves to
+ * N26, the ruleset this card system was originally built around.
+ */
+function spudmagNecroResolveVer($value) {
+	return strtoupper(trim($value)) === 'N23' ? 'N23' : 'N26';
+}
+
+/**
  * [necro-weapon] — one weapon line inside a [necro-card]. Self-closing; only
  * meaningful nested inside [necro-card], which is the only thing that ever
  * assembles its <tr> fragments into a table.
@@ -476,8 +489,28 @@ add_filter('the_content', 'spudmagRenderToc', 99);
  *       Every attribute is optional and left blank when omitted. stat-sr/stat-lr
  *       get a trailing " only when the value given is a plain whole number (a
  *       melee weapon's "E" range, for instance, is left bare).
+ *
+ *   ver="N23" — inherited from the enclosing [necro-card] automatically
+ *       (spudmagNecroCardShortcode() stashes its own resolved ver in
+ *       $GLOBALS['spudmag_necro_card_ver'] for exactly this, same device
+ *       [toc] uses to hand data to a later rendering step); only needs
+ *       setting here directly if a weapon is ever used outside a card, or
+ *       to override the card's ruleset for one line. At N23: stat-sr/
+ *       stat-lr display as "S"/"L" rather than "SR"/"LR"; two new columns,
+ *       stat-sm/stat-lm ("short modifier"/"long modifier" to the fighter's
+ *       ballistic stat), display as "S"/"L" too, immediately after the
+ *       first pair; stat-l displays under a "D" (damage, no lethality in
+ *       N23) header — stat-d does the same thing and wins if both are
+ *       given, so an editor who forgets the rename still gets a value; and
+ *       a new stat-am ("AM") column appears after D.
  */
-function spudmagNecroWeaponRange($value) {
+/**
+ * A trailing " (inches) only when the value given is a plain whole number —
+ * used for anything measured in inches: weapon stat-sr/stat-lr and the
+ * card's own stat-m. A melee weapon's "E" range, or any other non-numeric
+ * value, is left bare rather than getting a nonsensical quote mark.
+ */
+function spudmagNecroInches($value) {
 	$value = trim($value);
 	if ($value === '') {
 		return '';
@@ -487,24 +520,53 @@ function spudmagNecroWeaponRange($value) {
 
 function spudmagNecroWeaponShortcode($atts) {
 	$a = shortcode_atts(array(
+		'ver'     => '',
 		'name'    => '',
 		'stat-sr' => '',
 		'stat-lr' => '',
+		'stat-sm' => '',
+		'stat-lm' => '',
 		'stat-s'  => '',
 		'stat-ap' => '',
 		'stat-l'  => '',
+		'stat-d'  => '',
+		'stat-am' => '',
 		'traits'  => ''
 	), $atts, 'necro-weapon');
 
-	return '<tr class="necro-card__weapon-row">'
-		. '<td class="necro-card__weapon-name">' . esc_html($a['name']) . '</td>'
-		. '<td>' . esc_html(spudmagNecroWeaponRange($a['stat-sr'])) . '</td>'
-		. '<td>' . esc_html(spudmagNecroWeaponRange($a['stat-lr'])) . '</td>'
-		. '<td>' . esc_html($a['stat-s']) . '</td>'
-		. '<td>' . esc_html($a['stat-ap']) . '</td>'
-		. '<td>' . esc_html($a['stat-l']) . '</td>'
-		. '<td class="necro-card__weapon-traits">' . esc_html($a['traits']) . '</td>'
-		. '</tr>';
+	$verAtt = trim($a['ver']);
+	if ($verAtt === '' && isset($GLOBALS['spudmag_necro_card_ver'])) {
+		$verAtt = $GLOBALS['spudmag_necro_card_ver'];
+	}
+	$ver = spudmagNecroResolveVer($verAtt);
+
+	$cells = '<td class="necro-card__weapon-name">' . esc_html($a['name']) . '</td>'
+		. '<td>' . esc_html(spudmagNecroInches($a['stat-sr'])) . '</td>'
+		. '<td>' . esc_html(spudmagNecroInches($a['stat-lr'])) . '</td>';
+
+	if ($ver === 'N23') {
+		// Modifiers to the fighter's own ballistic stat, not distances — no
+		// trailing " the way stat-sr/stat-lr get.
+		$cells .= '<td>' . esc_html(trim($a['stat-sm'])) . '</td>'
+			. '<td>' . esc_html(trim($a['stat-lm'])) . '</td>';
+	}
+
+	$cells .= '<td>' . esc_html($a['stat-s']) . '</td>'
+		. '<td>' . esc_html($a['stat-ap']) . '</td>';
+
+	if ($ver === 'N23') {
+		// stat-d wins when both are given; stat-l is just the pre-N23
+		// attribute name still working under the new "D" header.
+		$d = trim($a['stat-d']) !== '' ? $a['stat-d'] : $a['stat-l'];
+		$cells .= '<td>' . esc_html(trim($d)) . '</td>'
+			. '<td>' . esc_html(trim($a['stat-am'])) . '</td>';
+	} else {
+		$cells .= '<td>' . esc_html($a['stat-l']) . '</td>';
+	}
+
+	$cells .= '<td class="necro-card__weapon-traits">' . esc_html($a['traits']) . '</td>';
+
+	return '<tr class="necro-card__weapon-row">' . $cells . '</tr>';
 }
 add_shortcode('necro-weapon', 'spudmagNecroWeaponShortcode');
 
@@ -519,7 +581,7 @@ function spudmagNecroStatCell($value) {
 /**
  * [necro-card] — a Necromunda-style fighter stat card.
  *
- *   [necro-card size="full|half" name="Trevor" role="Forge Boss (Champion)"
+ *   [necro-card size="full|half|min" name="Trevor" role="Forge Boss (Champion)"
  *       value="160" stat-m="4" stat-ws="3+" stat-bs="3+" stat-s="3" stat-t="4"
  *       stat-w="2" stat-i="3" stat-a="2" stat-sv="5+" stat-ld="7" stat-cl="8"
  *       stat-wil="6" stat-int="6" stat-xp="37" wargear="Respirator"
@@ -527,16 +589,29 @@ function spudmagNecroStatCell($value) {
  *       [necro-weapon .../]
  *       [necro-weapon .../]
  *   [/necro-card]
- *       size defaults to "full"; name is the only required attribute. role/value
- *       show an em dash when omitted. wargear/skills lines are omitted entirely
- *       when blank, and the weapons table only appears when at least one
- *       [necro-weapon] is nested inside. Consecutive [necro-card]s in a post
- *       are automatically grouped into a centered, wrapping row — see
- *       spudmagRenderNecroCardRows().
+ *       size defaults to "full". stat-m is measured in inches, like a
+ *       weapon's own stat-sr/stat-lr — a plain whole number gets a trailing
+ *       " (so stat-m="4" shows as 4"), anything else is left bare. At
+ *       full/half, name is the only required attribute; role/value show an
+ *       em dash when omitted. At size="min" —
+ *       a compact single line for scanning many stat lines at once — name
+ *       and role fold onto one line at the same size, name becomes optional
+ *       as long as role is given, and the value badge loses its "Credits"
+ *       caption. wargear/skills lines are omitted entirely when blank, and
+ *       the weapons table only appears when at least one [necro-weapon] is
+ *       nested inside. Consecutive [necro-card]s in a post are automatically
+ *       grouped into a centered, wrapping row — see spudmagRenderNecroCardRows().
+ *
+ *       ver="N23|N26" (case-insensitive, default N26) picks which ruleset's
+ *       fields show. At N23 the primary row drops Sv entirely (not blank —
+ *       the column itself is gone). Nested [necro-weapon]s automatically
+ *       inherit this card's ver without needing their own ver="" — see
+ *       spudmagNecroResolveVer() and the ver docs on [necro-weapon] above.
  */
 function spudmagNecroCardShortcode($atts, $content = null) {
 	$a = shortcode_atts(array(
 		'size'     => 'full',
+		'ver'      => '',
 		'name'     => '',
 		'role'     => '',
 		'value'    => '',
@@ -558,15 +633,54 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 		'skills'   => ''
 	), $atts, 'necro-card');
 
+	$size = in_array($a['size'], array('full', 'half', 'min'), true) ? $a['size'] : 'full';
+	$ver  = spudmagNecroResolveVer($a['ver']);
+
 	$name = trim($a['name']);
-	if ($name === '') {
+	$role = trim($a['role']);
+
+	// min is for scanning many compact stat lines at once, so name alone
+	// isn't required there — but the card still needs *something* to
+	// identify the row by, so role can stand in for it. full/half keep the
+	// original name-required rule unchanged.
+	if ($size === 'min') {
+		if ($name === '' && $role === '') {
+			return '';
+		}
+	} elseif ($name === '') {
 		return '';
 	}
 
-	$size = in_array($a['size'], array('full', 'half'), true) ? $a['size'] : 'full';
+	// Used anywhere an aria-label needs a human-readable name for the card —
+	// falls back to role for a min card with no name (name === '' only ever
+	// happens at that size, per the guard above).
+	$ariaName = $name !== '' ? $name : $role;
 
-	$role  = trim($a['role']);
 	$value = trim($a['value']);
+
+	if ($size === 'min') {
+		// Folded onto one line at the same size, one heading for the whole
+		// identity rather than name's own h4 plus a separate role <p> — a
+		// role-only card still gets a jump target, just with the role text
+		// as its label instead of a name.
+		if ($name !== '' && $role !== '') {
+			$identityInner = esc_html($name) . ' <span class="necro-card__role">&#8212;&#160;' . esc_html($role) . '</span>';
+		} elseif ($role !== '') {
+			$identityInner = esc_html($role);
+		} else {
+			$identityInner = esc_html($name);
+		}
+		$identityHtml = '<h4 class="necro-card__name">' . $identityInner . '</h4>';
+	} else {
+		$identityHtml = '<h4 class="necro-card__name">' . esc_html($name) . '</h4>'
+			. '<p class="necro-card__role">' . esc_html($role !== '' ? $role : '—') . '</p>';
+	}
+
+	// min drops the "Credits" caption under the value — there's no room left
+	// at that size once the badge shrinks to match the folded identity line.
+	$valueLabelHtml = $size !== 'min'
+		? '<span class="necro-card__value-label">' . esc_html__('Credits', 'spudworks-mag') . '</span>'
+		: '';
 
 	$headerHtml = '<div class="necro-card__band"></div>'
 		. '<div class="necro-card__header">'
@@ -576,17 +690,22 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 				// several of these together — h4 sits safely under whatever
 				// h2/h3 the surrounding article uses, and [toc] only scans
 				// h2/h3 so this can't leak into anyone's table of contents.
-				. '<h4 class="necro-card__name">' . esc_html($name) . '</h4>'
-				. '<p class="necro-card__role">' . esc_html($role !== '' ? $role : '—') . '</p>'
+				. $identityHtml
 			. '</div>'
 			. '<div class="necro-card__value">'
 				. '<span class="necro-card__value-number">' . esc_html($value !== '' ? $value : '—') . '</span>'
-				. '<span class="necro-card__value-label">' . esc_html__('Credits', 'spudworks-mag') . '</span>'
+				. $valueLabelHtml
 			. '</div>'
 		. '</div>';
 
-	$primaryLabels   = array('M', 'WS', 'BS', 'S', 'T', 'W', 'I', 'A', 'Sv');
-	$primaryKeys     = array('stat-m', 'stat-ws', 'stat-bs', 'stat-s', 'stat-t', 'stat-w', 'stat-i', 'stat-a', 'stat-sv');
+	$primaryLabels   = array('M', 'WS', 'BS', 'S', 'T', 'W', 'I', 'A');
+	$primaryKeys     = array('stat-m', 'stat-ws', 'stat-bs', 'stat-s', 'stat-t', 'stat-w', 'stat-i', 'stat-a');
+	if ($ver !== 'N23') {
+		// N23 has no Sv column at all — not blank, gone, so the row isn't
+		// left with a dangling empty cell.
+		$primaryLabels[] = 'Sv';
+		$primaryKeys[]   = 'stat-sv';
+	}
 	$secondaryLabels = array('Ld', 'Cl', 'Wil', 'Int', 'XP');
 	$secondaryKeys   = array('stat-ld', 'stat-cl', 'stat-wil', 'stat-int', 'stat-xp');
 
@@ -599,7 +718,11 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 		$primaryHeadHtml .= '<th scope="col">' . esc_html($label) . '</th>';
 	}
 	foreach ($primaryKeys as $key) {
-		$primaryBodyHtml .= spudmagNecroStatCell($a[$key]);
+		// Movement is measured in inches, same as a weapon's own stat-sr/
+		// stat-lr — a plain whole number gets the same trailing " they do.
+		$primaryBodyHtml .= $key === 'stat-m'
+			? '<td>' . esc_html(spudmagNecroInches($a[$key])) . '</td>'
+			: spudmagNecroStatCell($a[$key]);
 	}
 
 	$secondaryHeadHtml = '';
@@ -616,7 +739,7 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 	// them back together as one logical characteristics block, so a screen
 	// reader user doesn't land on two small, seemingly-unrelated tables.
 	$statsHtml = '<div class="necro-card__stat-groups" role="group" aria-label="'
-			. esc_attr(sprintf(__('%s characteristics', 'spudworks-mag'), $name)) . '">'
+			. esc_attr(sprintf(__('%s characteristics', 'spudworks-mag'), $ariaName)) . '">'
 		. '<table class="necro-card__stat-group necro-card__stat-group--primary">'
 			. '<thead><tr>' . $primaryHeadHtml . '</tr></thead>'
 			. '<tbody><tr>' . $primaryBodyHtml . '</tr></tbody>'
@@ -637,19 +760,41 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 	$rawContent = is_string($content) ? $content : '';
 	$weaponsHtml = '';
 	if (strpos($rawContent, '[necro-weapon') !== false) {
+		// Stash this card's ver so nested [necro-weapon]s inherit it without
+		// needing their own ver="" — unset right after so it can't leak into
+		// anything rendered later in the request. Safe across multiple cards
+		// on one page: do_shortcode() fully resolves this card's own nested
+		// content, global included, before control ever returns to render
+		// the next [necro-card] occurrence in the post.
+		$GLOBALS['spudmag_necro_card_ver'] = $ver;
 		$rows = do_shortcode(wp_strip_all_tags($rawContent));
+		unset($GLOBALS['spudmag_necro_card_ver']);
+
+		if ($ver === 'N23') {
+			$weaponHeadHtml = '<th class="necro-card__weapon-name" scope="col">' . esc_html__('Weapon', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('S', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('L', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('S', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('L', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('Str', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('AP', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('D', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('AM', 'spudworks-mag') . '</th>'
+				. '<th class="necro-card__weapon-traits" scope="col">' . esc_html__('Traits', 'spudworks-mag') . '</th>';
+		} else {
+			$weaponHeadHtml = '<th class="necro-card__weapon-name" scope="col">' . esc_html__('Weapon', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('SR', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('LR', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('Str', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('AP', 'spudworks-mag') . '</th>'
+				. '<th scope="col">' . esc_html__('L', 'spudworks-mag') . '</th>'
+				. '<th class="necro-card__weapon-traits" scope="col">' . esc_html__('Traits', 'spudworks-mag') . '</th>';
+		}
+
 		$weaponsHtml = '<div class="necro-card__weapons">'
 			. '<table class="necro-card__weapon-table" aria-label="'
-					. esc_attr(sprintf(__('%s weapons', 'spudworks-mag'), $name)) . '">'
-				. '<thead><tr>'
-					. '<th class="necro-card__weapon-name" scope="col">' . esc_html__('Weapon', 'spudworks-mag') . '</th>'
-					. '<th scope="col">' . esc_html__('SR', 'spudworks-mag') . '</th>'
-					. '<th scope="col">' . esc_html__('LR', 'spudworks-mag') . '</th>'
-					. '<th scope="col">' . esc_html__('Str', 'spudworks-mag') . '</th>'
-					. '<th scope="col">' . esc_html__('AP', 'spudworks-mag') . '</th>'
-					. '<th scope="col">' . esc_html__('L', 'spudworks-mag') . '</th>'
-					. '<th class="necro-card__weapon-traits" scope="col">' . esc_html__('Traits', 'spudworks-mag') . '</th>'
-				. '</tr></thead>'
+					. esc_attr(sprintf(__('%s weapons', 'spudworks-mag'), $ariaName)) . '">'
+				. '<thead><tr>' . $weaponHeadHtml . '</tr></thead>'
 				. '<tbody>' . $rows . '</tbody>'
 			. '</table>'
 		. '</div>';
@@ -684,7 +829,7 @@ function spudmagNecroCardShortcode($atts, $content = null) {
 	// a post strings several cards together.
 	return '<!--necro-card-->'
 		. '<article class="necro-card necro-card--' . esc_attr($size) . '" aria-label="'
-				. esc_attr(sprintf(__('%s, Necromunda fighter card', 'spudworks-mag'), $name)) . '">'
+				. esc_attr(sprintf(__('%s, Necromunda fighter card', 'spudworks-mag'), $ariaName)) . '">'
 			. $headerHtml
 			. '<div class="necro-card__stats">' . $statsHtml . '</div>'
 			. $weaponsHtml
@@ -803,7 +948,7 @@ function spudmagArchiveFeatureShortcode($atts, $content = null) {
 	$dateHtml = '';
 	if ($postResolved) {
 		$dateHtml = '<p class="card-byline"><time datetime="' . esc_attr(get_the_date('c', $linkId)) . '">'
-			. esc_html(get_the_date('', $linkId)) . '</time></p>';
+			. esc_html(get_the_date('', $linkId)) . '</time>' . spudmagCommentBadge($linkId) . '</p>';
 	}
 
 	$intro = is_string($content) ? trim($content) : '';

@@ -280,3 +280,73 @@
 	height: 1px;
 	overflow: hidden;
 }
+
+// --- Comment-count badge (after the dateline) -------------------------------
+// Speech-bubble outline with the count in a circle tucked onto its top-right
+// corner. Rendered by spudmagCommentBadge() only when a post has comments.
+// Linked to #comments in the article header, plain everywhere else.
+
+.comment-badge {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+	margin-left: 0.6em;
+	// Room for the count circle overhanging the icon's corner.
+	padding: 0.35em 0.7em 0 0;
+	// That top padding drags the icon below the text's midline; lift it back.
+	top: -0.15em;
+	color: $paper-dim;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.comment-badge__icon {
+	width: 1.3em;
+	height: 1.3em;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linejoin: round;
+}
+
+.comment-badge__count {
+	position: absolute;
+	top: 0;
+	right: 0;
+	box-sizing: border-box;
+	min-width: 1.45em;
+	height: 1.45em;
+	padding: 0 0.35em;
+	border-radius: 999px;
+	background: $hazard-yellow;
+	color: $ink;
+	font-family: $sans;
+	font-size: 0.72em;
+	font-weight: $weight-bold;
+	letter-spacing: 0;
+	line-height: 1.45em;
+	text-align: center;
+}
+
+// Beat the global `a` rule (accent colour, underline border, :focus tint).
+a.comment-badge {
+	color: $paper-dim;
+	border: 0;
+	transition: color $wipe-duration $wipe-ease;
+
+	&:focus {
+		color: $paper-dim;
+	}
+
+	&:hover,
+	&:focus-visible {
+		color: $paper;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	a.comment-badge {
+		transition: none;
+	}
+}

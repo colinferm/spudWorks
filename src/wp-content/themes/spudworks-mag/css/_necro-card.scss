@@ -106,6 +106,47 @@ $necro-padding:   1.4rem 1.5rem 1.6rem;
 		}
 	}
 
+	// --- Variant: min (compact single-line comparison cards) ---------------
+	// For scanning many stat lines at once. Name+role fold onto one line at
+	// the same size — see spudmagNecroCardShortcode(): role nests as a <span>
+	// inside the name's own <h4> rather than its own <p> when size="min", so
+	// this is naturally one line already, no flex/inline-block trick needed
+	// here — and the credit badge shrinks to roughly match that line's height.
+	&--min {
+		padding-bottom: 0.7rem;
+
+		.necro-card__header {
+			align-items: center; // base rule is flex-start — center the single
+			// identity line against the (now much shorter) badge instead of
+			// both sharing a top edge
+			padding-top: 0.6rem;
+			padding-bottom: 0.6rem;
+		}
+
+		.necro-card__name {
+			font-size: 1.05rem;
+		}
+
+		.necro-card__role {
+			display: inline;
+			margin: 0;
+			font-family: $sans;
+			font-size: inherit; // matches the name's size exactly, not just close to it
+			font-weight: $weight-regular;
+			color: $necro-text-dim;
+		}
+
+		.necro-card__value {
+			width: 2rem;
+			height: 2rem;
+			border-width: 1.5px;
+
+			&-number {
+				font-size: 0.65rem;
+			}
+		}
+	}
+
 	// --- Stat rows ----------------------------------------------------------
 	// Two independent tables (primary 9-up, secondary 5-up) rather than one
 	// 14-column row: a table row can't reflow its own columns, but two
