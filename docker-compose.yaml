@@ -12,12 +12,19 @@ services:
       MYSQL_PASSWORD: spudworks
       NODE_ENV: development
       DOMAIN_NAME: localhost
+      # Dev S3 offload target: MinIO (see the s3 service below).
+      S3_KEY: spudworks
+      S3_SECRET: spudworks-secret
+      S3_REGION: us-east-1
+      S3_ENDPOINT: http://s3:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
     volumes:
       - "./src/wp-content/themes/:/var/www/html/wp-content/themes"
     ports:
       - "8080:80"
     depends_on:
       - mailpit
+      - s3
 
   # Dev mail catcher: PHP's mail() is relayed here via msmtp (see Dockerfile).
   # Inbox UI at http://localhost:8025 — nothing leaves the machine.
@@ -26,6 +33,43 @@ services:
     container_name: spudworks-mailpit
     ports:
       - "8025:8025"
+
+  # Dev S3 stand-in for the media offload. S3 API on :9000, console on :9001.
+  # (MinIO's official images were withdrawn, so RustFS is used instead.)
+  # RUSTFS_SERVER_DOMAINS enables virtual-host style URLs
+  # (bucket.s3.localhost:9000), used to test the CNAME setting.
+  s3:
+    image: rustfs/rustfs:1.0.3
+    container_name: spudworks-s3
+    environment:
+      RUSTFS_ACCESS_KEY: spudworks
+      RUSTFS_SECRET_KEY: spudworks-secret
+      RUSTFS_SERVER_DOMAINS: s3.localhost
+    volumes:
+      - spudworks-s3-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  # One-shot: creates the dev bucket and makes it publicly readable via a
+  # bucket policy (the dev server may not enforce per-object ACLs).
+  s3-init:
+    image: amazon/aws-cli:2.17.0
+    container_name: spudworks-s3-init
+    depends_on:
+      - s3
+    environment:
+      AWS_ACCESS_KEY_ID: spudworks
+      AWS_SECRET_ACCESS_KEY: spudworks-secret
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until aws --endpoint-url http://s3:9000 s3api head-bucket --bucket spudworks-media 2>/dev/null
+      || aws --endpoint-url http://s3:9000 s3api create-bucket --bucket spudworks-media; do sleep 1; done;
+      aws --endpoint-url http://s3:9000 s3api put-bucket-policy --bucket spudworks-media --policy
+      '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::spudworks-media/*\"]}]}';
+      exit 0;
+      "
 
   mysql-server:
     image: mysql:8.0
@@ -41,18 +85,6 @@ services:
     ports:
       - "33060:3306"
 
-  mariadb-server:
-    image: mariadb:10.5
-    container_name: spudworks-mariadb-server
-    environment:
-      MARIADB_ROOT_PASSWORD: spudworks
-      MARIADB_DATABASE: spudworks
-      MARIADB_USER: spudworks
-      MARIADB_PASSWORD: spudworks
-    volumes:
-      - spudworks-mysql-data:/var/lib/mariadb
-    ports:
-      - "33061:3306"
-
 volumes:
   spudworks-mysql-data:
+  spudworks-s3-data:

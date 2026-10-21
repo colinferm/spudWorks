@@ -23,6 +23,7 @@ define("METARATING", "_spudmag_rating");
 define("METAREVIEWITEM", "_spudmag_review_item");
 define("METAREVIEWTYPE", "_spudmag_review_type");
 define("METATODOS", "_spudmag_todos");
+define("METAS3", "_spudmag_s3");
 define("METAPAGETEMPLATE", "_spudmag_page_template");
 define("METAGALLERIES", "_spudmag_galleries");
 define("METARELATED", "_spudmag_related");
@@ -41,6 +42,11 @@ require_once THEMEDIR . '/lib/comments.php';
 require_once THEMEDIR . '/lib/comment-security.php';
 require_once THEMEDIR . '/lib/email-functions.php';
 require_once THEMEDIR . '/lib/calendar-feed.php';
+require_once THEMEDIR . '/lib/s3-offload.php';
+
+if (defined('WP_CLI') && WP_CLI) {
+	require_once THEMEDIR . '/lib/cli-images.php';
+}
 
 if (is_admin()) {
 	require_once THEMEDIR . '/admin/meta-boxes.php';
@@ -51,6 +57,7 @@ if (is_admin()) {
 	require_once THEMEDIR . '/admin/todos-dashboard.php';
 	require_once THEMEDIR . '/admin/calendar-settings.php';
 	require_once THEMEDIR . '/admin/comment-bulk-email.php';
+	require_once THEMEDIR . '/admin/media-s3-settings.php';
 }
 
 /**

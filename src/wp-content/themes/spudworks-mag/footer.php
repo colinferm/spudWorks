@@ -27,14 +27,13 @@
 
 		<?php wp_footer(); ?>
 		<!-- Google tag (gtag.js) -->
-		 <?php if (is_preview()) : ?>
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-WSGEZ2G4PP"></script>
+		 <?php if (!is_preview() && !current_user_can( 'edit_posts' )) : ?>
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-WSGEZ2G4PP"></script>
 		<?php endif; ?>
 		<script>
 			window.dataLayer = window.dataLayer || [];
 			function gtag(){dataLayer.push(arguments);}
 			gtag('js', new Date());
-
 			gtag('config', 'G-WSGEZ2G4PP');
 		</script>
 	</body>

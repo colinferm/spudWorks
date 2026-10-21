@@ -7,9 +7,10 @@
 		{ "name": "Colin Andrew Ferm" }
 	],
 	"require": {
-		"php": ">=8.0"
+		"php": ">=8.0",
+		"aws/aws-sdk-php": "^3.0"
 	},
 	"config": {
-		"vendor-dir": "lib"
+		"vendor-dir": "vendor"
 	}
 }

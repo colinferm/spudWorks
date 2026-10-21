@@ -12,7 +12,7 @@
  *     build/cleanup-dev-data.sh
  *
  * What it removes:
- *   - All spudWorks Magazine post meta (template choice, secondary headline, pinned).
+ *   - All spudWorks Magazine post meta (template choice, secondary headline).
  *   - The demo featured images / gallery attachments (test-* and frontdoor* imports),
  *     and any _thumbnail_id references to them.
  *   - The image/gallery/pullquote/page-break blocks injected into the demo posts.
@@ -37,8 +37,7 @@ $demoBio = 'Colin writes fiction and paints small plastic gangers for the Necrom
 // 1) Remove all spudWorks Magazine post meta.
 delete_post_meta_by_key('_spudmag_template');
 delete_post_meta_by_key('_spudmag_subhead');
-delete_post_meta_by_key('_spudmag_pinned');
-echo "Removed spudmag post meta (template / subhead / pinned).\n";
+echo "Removed spudmag post meta (template / subhead).\n";
 
 // 2) Delete demo attachments and clear thumbnail references to them.
 $attachments = get_posts(array(

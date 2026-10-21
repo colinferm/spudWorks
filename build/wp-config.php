@@ -103,6 +103,19 @@ define("FTP_PASS", "Upl0ad!");
 
 define('WP_REDIS_PORT', 6379);
 
+/**
+ * S3 media offload (spudWorks Magazine theme). In dev these come from the
+ * docker-compose environment and point at MinIO; in production put the real
+ * AWS values here and leave out the two ENDPOINT constants.
+ */
+if (getenv('S3_KEY')) {
+	define('SPUDMAG_S3_KEY', getenv('S3_KEY'));
+	define('SPUDMAG_S3_SECRET', getenv('S3_SECRET'));
+	define('SPUDMAG_S3_REGION', getenv('S3_REGION'));
+	define('SPUDMAG_S3_ENDPOINT', getenv('S3_ENDPOINT'));
+	define('SPUDMAG_S3_PUBLIC_ENDPOINT', getenv('S3_PUBLIC_ENDPOINT'));
+}
+
 /* That's all, stop editing! Happy blogging. */
 
 /** Absolute path to the WordPress directory. */
