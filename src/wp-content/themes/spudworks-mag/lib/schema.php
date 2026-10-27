@@ -200,6 +200,57 @@ function spudmagSchemaPostCrumbs($postId) {
 }
 
 /**
+ * A schema Rating node on the 0.5-5 scale.
+ */
+function spudmagSchemaRating($value) {
+	return array(
+		'@type'       => 'Rating',
+		'ratingValue' => $value,
+		'bestRating'  => 5,
+		'worstRating' => 0.5
+	);
+}
+
+/**
+ * Review nodes for every review after the first on a multi-review post. Each
+ * reuses the article's headline/author/publisher so it stands alone as a
+ * valid Review of its own item. Unrated reviews are skipped.
+ */
+function spudmagSchemaExtraReviews($postId, $anchorUrl, $articleNode) {
+	$reviews = spudmagGetReviews($postId);
+	array_shift($reviews);
+
+	$nodes = array();
+	foreach ($reviews as $index => $review) {
+		// reviewRating is required for a Review rich result, so an unrated
+		// extra review is left out rather than emitted as an invalid node.
+		if ($review['rating'] <= 0) {
+			continue;
+		}
+		$node = array(
+			'@type'            => 'Review',
+			'@id'              => $anchorUrl . '#review-' . ($index + 2),
+			'isPartOf'         => array('@id' => $anchorUrl . '#webpage'),
+			'mainEntityOfPage' => array('@id' => $anchorUrl . '#webpage'),
+			'headline'         => $articleNode['headline'],
+			'datePublished'    => $articleNode['datePublished'],
+			'dateModified'     => $articleNode['dateModified'],
+			'author'           => $articleNode['author'],
+			'publisher'        => $articleNode['publisher'],
+			'inLanguage'       => $articleNode['inLanguage'],
+			'url'              => $anchorUrl,
+			'itemReviewed'     => array(
+				'@type' => $review['type'],
+				'name'  => $review['item'] !== '' ? $review['item'] : get_the_title($postId)
+			)
+		);
+		$node['reviewRating'] = spudmagSchemaRating($review['rating']);
+		$nodes[] = $node;
+	}
+	return $nodes;
+}
+
+/**
  * The Article (or Review) node for a singular post, wired to the WebPage,
  * author, publisher, and primary image already placed in the graph.
  */
@@ -261,21 +312,18 @@ function spudmagSchemaArticle($postId, $anchorUrl, $hasImage) {
 	}
 
 	// Reviews carry a rating + the thing reviewed when the editor filled them in.
+	// The article node holds the first review; any further ones are emitted as
+	// sibling Review nodes (see spudmagSchemaExtraReviews()).
 	if ($isReview) {
-		$rating = spudmagGetRating($postId);
-		if ($rating > 0) {
-			$node['reviewRating'] = array(
-				'@type'       => 'Rating',
-				'ratingValue' => $rating,
-				'bestRating'  => 5,
-				'worstRating' => 0
-			);
+		$reviews = spudmagGetReviews($postId);
+		$first   = reset($reviews);
+		if ($first['rating'] > 0) {
+			$node['reviewRating'] = spudmagSchemaRating($first['rating']);
 		}
-		$item = spudmagGetReviewItem($postId);
 		$node['itemReviewed'] = array(
 			// A Google-accepted itemReviewed @type (editor-chosen), not bare "Thing".
-			'@type' => spudmagGetReviewType($postId),
-			'name'  => $item !== '' ? $item : get_the_title($postId)
+			'@type' => $first['type'],
+			'name'  => $first['item'] !== '' ? $first['item'] : get_the_title($postId)
 		);
 	}
 
@@ -329,7 +377,12 @@ function spudmagSchemaGraph() {
 		if ($authorId) {
 			$graph[] = spudmagSchemaPerson($authorId);
 		}
-		$graph[] = spudmagSchemaArticle($postId, $anchorUrl, $hasImage);
+		$articleNode = spudmagSchemaArticle($postId, $anchorUrl, $hasImage);
+		$graph[] = $articleNode;
+		if (has_category('reviews', $postId)) {
+			$extraReviews = spudmagSchemaExtraReviews($postId, $anchorUrl, $articleNode);
+			$graph = array_merge($graph, $extraReviews);
+		}
 
 	} elseif (is_page()) {
 		$postId    = get_queried_object_id();
@@ -356,6 +409,7 @@ function spudmagSchemaGraph() {
 		$home      = spudmagHomeItems(12);
 		$posts     = array_filter(array_merge(
 			array($home['featured']),
+			$home['row'],
 			wp_list_pluck($home['items'], 'ID')
 		));
 

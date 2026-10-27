@@ -55,7 +55,7 @@
 	QTags.addButton(
 		'spudmag_pullquote',
 		'pullquote',
-		'[pullquote align="center" attribution=""]',
+		'[pullquote align="right"]',
 		'[/pullquote]',
 		'',
 		'Insert a pullquote',

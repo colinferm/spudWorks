@@ -51,6 +51,17 @@ function spudmagAdminAssets($hook) {
 		));
 	}
 
+	// Repeatable review boxes in the post meta box.
+	if ($hook === 'post.php' || $hook === 'post-new.php') {
+		wp_enqueue_script(
+			'spudmag-reviews',
+			THEMEURI . '/js/admin-reviews.js',
+			array(),
+			THEMEVERSION,
+			true
+		);
+	}
+
 	// Featured Post widget search: the widgets screen and the customizer.
 	if ($hook === 'widgets.php' || $hook === 'customize.php') {
 		wp_enqueue_script(

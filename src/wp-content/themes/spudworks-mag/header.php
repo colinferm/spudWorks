@@ -9,15 +9,6 @@
 		<meta charset="<?php bloginfo('charset'); ?>">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<?php wp_head(); ?>
-		<!-- MailerLite Universal -->
-		<script>
-			(function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
-			.push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
-			n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
-			(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
-			ml('account', '2509337');
-		</script>
-		<!-- End MailerLite Universal -->
 	</head>
 	<body <?php body_class(); ?>>
 		<?php wp_body_open(); ?>

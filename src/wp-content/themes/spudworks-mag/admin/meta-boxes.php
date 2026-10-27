@@ -25,6 +25,39 @@ function spudmagAddMetaBox() {
 add_action('add_meta_boxes', 'spudmagAddMetaBox');
 
 /**
+ * One review's fields (rating, item name, item type). The inputs are array
+ * fields so any number of these groups can ride along in the same save; the
+ * template clone in js/admin-reviews.js uses this same markup.
+ */
+function spudmagRenderReviewFields($review) {
+	$reviewTypes = spudmagReviewTypes();
+	?>
+	<div class="spudmag-review">
+		<p>
+			<label><strong><?php esc_html_e('Review rating', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(Reviews only)', 'spudworks-mag'); ?></em></label><br>
+			<input type="number" name="spudmag_rating[]" class="widefat" min="0.5" max="5" step="0.5" value="<?php echo $review['rating'] > 0 ? esc_attr($review['rating']) : ''; ?>" placeholder="0.5–5">
+		</p>
+		<p>
+			<label><strong><?php esc_html_e('Item reviewed', 'spudworks-mag'); ?></strong></label><br>
+			<input type="text" name="spudmag_review_item[]" class="widefat" value="<?php echo esc_attr($review['item']); ?>" placeholder="<?php esc_attr_e('Defaults to the post title', 'spudworks-mag'); ?>">
+		</p>
+		<p>
+			<label><strong><?php esc_html_e('Item type', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(for the review snippet)', 'spudworks-mag'); ?></em></label><br>
+			<select name="spudmag_review_type[]" class="widefat">
+				<?php foreach ($reviewTypes as $value => $label) : ?>
+					<option value="<?php echo esc_attr($value); ?>" <?php selected($review['type'], $value); ?>>
+						<?php echo esc_html($label); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+		</p>
+		<p class="spudmag-review-remove-wrap"><button type="button" class="button-link button-link-delete spudmag-review-remove"><?php esc_html_e('Remove this review', 'spudworks-mag'); ?></button></p>
+		<hr>
+	</div>
+	<?php
+}
+
+/**
  * Render the meta box fields.
  */
 function spudmagRenderMetaBox($post) {
@@ -33,10 +66,8 @@ function spudmagRenderMetaBox($post) {
 	$template = spudmagGetTemplate($post->ID);
 	$subhead = spudmagGetSubhead($post->ID);
 	$sticky = is_sticky($post->ID);
-	$rating = spudmagGetRating($post->ID);
-	$reviewItem = spudmagGetReviewItem($post->ID);
-	$reviewType = spudmagGetReviewType($post->ID);
-	$reviewTypes = spudmagReviewTypes();
+	$reviews = spudmagGetReviews($post->ID);
+	$blankReview = array('item' => '', 'type' => 'Product', 'rating' => 0.0);
 
 	$templates = array(
 		'showcase' => __('Showcase', 'spudworks-mag'),
@@ -65,24 +96,15 @@ function spudmagRenderMetaBox($post) {
 		</label>
 	</p>
 	<hr>
-	<p>
-		<label for="spudmag-rating"><strong><?php esc_html_e('Review rating', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(Reviews only)', 'spudworks-mag'); ?></em></label><br>
-		<input type="number" name="spudmag_rating" id="spudmag-rating" class="widefat" min="0" max="5" step="0.5" value="<?php echo $rating > 0 ? esc_attr($rating) : ''; ?>" placeholder="0–5">
-	</p>
-	<p>
-		<label for="spudmag-review-item"><strong><?php esc_html_e('Item reviewed', 'spudworks-mag'); ?></strong></label><br>
-		<input type="text" name="spudmag_review_item" id="spudmag-review-item" class="widefat" value="<?php echo esc_attr($reviewItem); ?>" placeholder="<?php esc_attr_e('Defaults to the post title', 'spudworks-mag'); ?>">
-	</p>
-	<p>
-		<label for="spudmag-review-type"><strong><?php esc_html_e('Item type', 'spudworks-mag'); ?></strong> <em><?php esc_html_e('(for the review snippet)', 'spudworks-mag'); ?></em></label><br>
-		<select name="spudmag_review_type" id="spudmag-review-type" class="widefat">
-			<?php foreach ($reviewTypes as $value => $label) : ?>
-				<option value="<?php echo esc_attr($value); ?>" <?php selected($reviewType, $value); ?>>
-					<?php echo esc_html($label); ?>
-				</option>
-			<?php endforeach; ?>
-		</select>
-	</p>
+	<div id="spudmag-reviews">
+		<?php foreach ($reviews as $review) : ?>
+			<?php spudmagRenderReviewFields($review); ?>
+		<?php endforeach; ?>
+	</div>
+	<template id="spudmag-review-template">
+		<?php spudmagRenderReviewFields($blankReview); ?>
+	</template>
+	<p><button type="button" class="button" id="spudmag-review-add"><?php esc_html_e('Add another review', 'spudworks-mag'); ?></button></p>
 	<?php
 }
 
@@ -117,27 +139,57 @@ function spudmagSaveMeta($postId) {
 	// "Stick this post..." checkbox *after* save_post fires, so anything set
 	// here would just be overwritten by core a moment later.
 
-	// Review rating (0-5, half steps). A blank/zero value clears it so the post
-	// emits a plain Article rather than a Review with a 0 rating.
-	$rating = isset($_POST['spudmag_rating']) ? (float) $_POST['spudmag_rating'] : 0.0;
-	$rating = max(0.0, min(5.0, $rating));
+	// Reviews: parallel arrays of rating / item / type, one slot per review box.
+	// Blank extra boxes (no item name and no rating) are dropped so they vanish
+	// on refresh; the first box always survives as slot 0. One surviving review
+	// stays scalar in the meta fields, several are stored as arrays.
+	$ratings = isset($_POST['spudmag_rating']) ? (array) wp_unslash($_POST['spudmag_rating']) : array();
+	$items   = isset($_POST['spudmag_review_item']) ? (array) wp_unslash($_POST['spudmag_review_item']) : array();
+	$types   = isset($_POST['spudmag_review_type']) ? (array) wp_unslash($_POST['spudmag_review_type']) : array();
+	$reviewTypes = spudmagReviewTypes();
+
+	$savedItems = array();
+	$savedTypes = array();
+	$savedRatings = array();
+	$slots = max(count($ratings), count($items), count($types));
+	for ($i = 0; $i < $slots; $i++) {
+		$rating = isset($ratings[$i]) && is_scalar($ratings[$i]) ? max(0.0, min(5.0, (float) $ratings[$i])) : 0.0;
+		$item   = isset($items[$i]) && is_scalar($items[$i]) ? sanitize_text_field($items[$i]) : '';
+		$type   = isset($types[$i]) && is_scalar($types[$i]) ? sanitize_text_field($types[$i]) : '';
+		if ($i > 0 && $item === '' && $rating <= 0) {
+			continue;
+		}
+		$savedItems[]   = $item;
+		$savedTypes[]   = array_key_exists($type, $reviewTypes) ? $type : 'Product';
+		$savedRatings[] = $rating;
+	}
+
+	if (count($savedItems) > 1) {
+		update_post_meta($postId, METARATING, $savedRatings);
+		update_post_meta($postId, METAREVIEWITEM, $savedItems);
+		update_post_meta($postId, METAREVIEWTYPE, $savedTypes);
+		return;
+	}
+
+	// Single review: scalar fields. A blank/zero rating clears it so the post
+	// emits a plain Article rather than a Review with a 0 rating; the type is
+	// only stored when valid (the getter otherwise defaults).
+	$rating = $savedRatings ? $savedRatings[0] : 0.0;
 	if ($rating > 0) {
 		update_post_meta($postId, METARATING, $rating);
 	} else {
 		delete_post_meta($postId, METARATING);
 	}
 
-	$reviewItem = isset($_POST['spudmag_review_item']) ? sanitize_text_field(wp_unslash($_POST['spudmag_review_item'])) : '';
+	$reviewItem = $savedItems ? $savedItems[0] : '';
 	if ($reviewItem !== '') {
 		update_post_meta($postId, METAREVIEWITEM, $reviewItem);
 	} else {
 		delete_post_meta($postId, METAREVIEWITEM);
 	}
 
-	// Item type for the review's itemReviewed @type; only stored when it's one
-	// of the Google-accepted types, otherwise cleared (the getter then defaults).
-	$reviewType = isset($_POST['spudmag_review_type']) ? sanitize_text_field(wp_unslash($_POST['spudmag_review_type'])) : '';
-	if (array_key_exists($reviewType, spudmagReviewTypes())) {
+	$reviewType = $savedTypes ? $savedTypes[0] : '';
+	if ($reviewType !== '') {
 		update_post_meta($postId, METAREVIEWTYPE, $reviewType);
 	} else {
 		delete_post_meta($postId, METAREVIEWTYPE);

@@ -113,11 +113,14 @@ function spudmagGetSubhead($postId) {
 }
 
 /**
- * The review rating for a post on a 0-5 scale (0.0 when unset/blank). Only
+ * The review rating for a post on a 0.5-5 scale (0.0 when unset/blank). Only
  * meaningful for posts in the Reviews category; used to emit a schema Review.
  */
 function spudmagGetRating($postId) {
 	$value = get_post_meta($postId, METARATING, true);
+	if (is_array($value)) {
+		$value = reset($value);
+	}
 	if ($value === '' || $value === null) {
 		return 0.0;
 	}
@@ -128,7 +131,11 @@ function spudmagGetRating($postId) {
  * The name of the thing a review is about (empty string if none).
  */
 function spudmagGetReviewItem($postId) {
-	return trim((string) get_post_meta($postId, METAREVIEWITEM, true));
+	$value = get_post_meta($postId, METAREVIEWITEM, true);
+	if (is_array($value)) {
+		$value = reset($value);
+	}
+	return trim((string) $value);
 }
 
 /**
@@ -163,7 +170,11 @@ function spudmagReviewTypes() {
  * Falls back to the generic-but-Google-valid 'Product' when nothing valid is set.
  */
 function spudmagGetReviewType($postId) {
-	$value = (string) get_post_meta($postId, METAREVIEWTYPE, true);
+	$value = get_post_meta($postId, METAREVIEWTYPE, true);
+	if (is_array($value)) {
+		$value = reset($value);
+	}
+	$value = (string) $value;
 	return array_key_exists($value, spudmagReviewTypes()) ? $value : 'Product';
 }
 
@@ -252,24 +263,30 @@ function spudmagHasByline($postId) {
 }
 
 /**
- * Posts for the home grid: the featured post (if any) is returned first,
- * followed by the most recent posts, excluding the featured one.
+ * Posts for the home page: the featured hero (if any), the row of up to 3
+ * posts beneath it, and the grid of posts after that. Nothing appears twice
+ * across the three.
  *
- * The featured slot is the newest *published* sticky post, so a sticky post
- * scheduled ahead takes over the hero by itself once its date passes.
+ * The hero is the newest *published* sticky post, so a sticky post scheduled
+ * ahead takes over the hero by itself once its date passes. The row prefers
+ * the next-newest sticky posts (so pinning ahead of time reserves a row spot
+ * too, not just the hero), newest first; any slots sticky posts don't fill
+ * are backfilled with the next latest posts. The grid is everything left
+ * over, newest first.
  *
- * Returns an array with keys 'featured' (int post ID, 0 when none) and
- * 'items' (WP_Post[]).
+ * Returns an array with keys 'featured' (int post ID, 0 when none),
+ * 'row' (int[], up to 3 post IDs) and 'items' (WP_Post[]).
  */
 function spudmagHomeItems($count = 12) {
 	global $wpdb;
 
 	$featuredId = 0;
 	$stickyIds = get_option('sticky_posts');
+	$stickyIds = is_array($stickyIds) ? $stickyIds : array();
 
 	// Only the ID is needed downstream, so this stays a single lean lookup
 	// rather than a WP_Query that would hydrate a whole post to be thrown away.
-	if (is_array($stickyIds) && !empty($stickyIds)) {
+	if (!empty($stickyIds)) {
 		$placeholders = implode(',', array_fill(0, count($stickyIds), '%d'));
 
 		$featuredId = (int) $wpdb->get_var($wpdb->prepare(
@@ -284,6 +301,24 @@ function spudmagHomeItems($count = 12) {
 		));
 	}
 
+	// Same lean lookup for the row, just excluding the hero and capped at 3.
+	$rowStickyIds = array();
+	$otherStickyIds = array_values(array_diff($stickyIds, array($featuredId)));
+	if (!empty($otherStickyIds)) {
+		$placeholders = implode(',', array_fill(0, count($otherStickyIds), '%d'));
+
+		$rowStickyIds = array_map('intval', $wpdb->get_col($wpdb->prepare(
+			"SELECT ID
+			FROM {$wpdb->posts}
+			WHERE post_type = 'post'
+				AND post_status = 'publish'
+				AND ID IN ($placeholders)
+			ORDER BY post_date DESC
+			LIMIT 3",
+			$otherStickyIds
+		)));
+	}
+
 	$itemsQuery = new WP_Query(array(
 		'post_type'           => 'post',
 		'post_status'         => 'publish',
@@ -295,7 +330,21 @@ function spudmagHomeItems($count = 12) {
 	$items = $itemsQuery->posts;
 	wp_reset_postdata();
 
-	return array('featured' => $featuredId, 'items' => $items);
+	// Drop any row stickies already in $items (they're about to be placed in
+	// the row explicitly), then backfill the row from what's left, newest
+	// first, so the rest becomes the grid with nothing repeated.
+	$remaining = array_values(array_filter($items, function ($post) use ($rowStickyIds) {
+		return !in_array($post->ID, $rowStickyIds, true);
+	}));
+	$backfillCount = max(0, 3 - count($rowStickyIds));
+	$backfillIds = array_map(function ($post) {
+		return $post->ID;
+	}, array_slice($remaining, 0, $backfillCount));
+
+	$rowIds = array_merge($rowStickyIds, $backfillIds);
+	$gridItems = array_slice($remaining, $backfillCount);
+
+	return array('featured' => $featuredId, 'row' => $rowIds, 'items' => $gridItems);
 }
 
 /**
@@ -366,4 +415,43 @@ function spudmagRelatedStories($postId, $count = 4) {
 		}
 	}
 	return $related;
+}
+
+/**
+ * Every review on a post as a list of array(item, type, rating) entries.
+ *
+ * A single review keeps the three meta fields scalar; several reviews store
+ * each field as an array, index-aligned. Always returns at least one entry
+ * (the first mirrors the scalar getters) so callers can loop unconditionally.
+ */
+function spudmagGetReviews($postId) {
+	$items   = get_post_meta($postId, METAREVIEWITEM, true);
+	$types   = get_post_meta($postId, METAREVIEWTYPE, true);
+	$ratings = get_post_meta($postId, METARATING, true);
+
+	if (!is_array($items) && !is_array($types) && !is_array($ratings)) {
+		return array(array(
+			'item'   => spudmagGetReviewItem($postId),
+			'type'   => spudmagGetReviewType($postId),
+			'rating' => spudmagGetRating($postId)
+		));
+	}
+
+	$items   = (array) $items;
+	$types   = (array) $types;
+	$ratings = (array) $ratings;
+	$count   = max(count($items), count($types), count($ratings));
+	$reviewTypes = spudmagReviewTypes();
+
+	$reviews = array();
+	for ($i = 0; $i < $count; $i++) {
+		$type  = isset($types[$i]) ? (string) $types[$i] : '';
+		$value = isset($ratings[$i]) ? (float) $ratings[$i] : 0.0;
+		$reviews[] = array(
+			'item'   => isset($items[$i]) ? trim((string) $items[$i]) : '',
+			'type'   => array_key_exists($type, $reviewTypes) ? $type : 'Product',
+			'rating' => max(0.0, min(5.0, $value))
+		);
+	}
+	return $reviews;
 }
