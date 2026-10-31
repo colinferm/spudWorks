@@ -6,6 +6,7 @@
  *     [author-note] shortcodes.
  *   - A contextual Help tab on the post screen documenting their syntax.
  *   - The live post-search script (+ AJAX nonce) for the Featured Post widget.
+ *   - Scheduled + draft posts in the Insert/Edit Link search, status-labelled.
  */
 
 /**
@@ -230,3 +231,44 @@ function spudmagEditorHelpTab() {
 	));
 }
 add_action('current_screen', 'spudmagEditorHelpTab');
+
+/**
+ * Let the classic editor's Insert/Edit Link search find scheduled and draft
+ * posts too, so pre-written content can link ahead to pieces that aren't live
+ * yet. Runs on the wp-link-ajax request (admin-ajax, so is_admin() holds).
+ */
+function spudmagLinkQueryArgs($query) {
+	$query['post_status'] = array('publish', 'future', 'draft');
+	return $query;
+}
+add_filter('wp_link_query_args', 'spudmagLinkQueryArgs');
+
+/**
+ * Label unpublished results with their status and give them a usable URL.
+ *
+ * Core hands unpublished posts a plain ?p=ID permalink. A scheduled post's
+ * slug is already fixed, so it gets the pretty permalink it will publish at.
+ * A draft's slug can still change (or isn't set yet), so it keeps ?p=ID,
+ * which WordPress redirects to the real permalink once the post goes live;
+ * lib/link-fixer.php then rewrites those links to the permalink each morning.
+ */
+function spudmagLinkQueryResults($results) {
+	foreach ($results as &$result) {
+		$status = get_post_status($result['ID']);
+		if ($status === 'publish') {
+			continue;
+		}
+
+		if ($status === 'future') {
+			list($template, $name) = get_sample_permalink($result['ID']);
+			$result['permalink'] = str_replace(array('%postname%', '%pagename%'), $name, $template);
+		}
+
+		$label = esc_html(get_post_status_object($status)->label);
+		$result['info'] = $label . ' · ' . $result['info'];
+	}
+	unset($result);
+
+	return $results;
+}
+add_filter('wp_link_query', 'spudmagLinkQueryResults');

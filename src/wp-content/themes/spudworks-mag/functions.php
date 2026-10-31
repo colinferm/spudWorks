@@ -43,6 +43,7 @@ require_once THEMEDIR . '/lib/comment-security.php';
 require_once THEMEDIR . '/lib/email-functions.php';
 require_once THEMEDIR . '/lib/calendar-feed.php';
 require_once THEMEDIR . '/lib/s3-offload.php';
+require_once THEMEDIR . '/lib/link-fixer.php';
 
 if (defined('WP_CLI') && WP_CLI) {
 	require_once THEMEDIR . '/lib/cli-images.php';
@@ -220,6 +221,11 @@ function spudmagAssets() {
 		if (get_option('thread_comments')) {
 			wp_enqueue_script('comment-reply');
 		}
+	}
+
+	// Arrow-key and swipe navigation between a post's image attachment pages.
+	if (is_attachment()) {
+		wp_enqueue_script('spudmag-attachment-nav', THEMEURI . '/js/attachment-nav.js', array(), THEMEVERSION, true);
 	}
 }
 add_action('wp_enqueue_scripts', 'spudmagAssets');

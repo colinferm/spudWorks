@@ -411,6 +411,60 @@
 	}
 }
 
+// --- Attachment page -------------------------------------------------------
+// One "large" image centered in the content well, then Prev/Next through the
+// parent post's other images (attachment.php).
+.attachment-media {
+	text-align: center;
+
+	img {
+		display: inline-block;
+		max-width: 100%;
+		height: auto;
+	}
+}
+
+.attachment-nav {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-top: 1.5rem;
+	padding: 0 10px;
+	font-family: $sans;
+
+	@include from($bp-md) {
+		padding: 0;
+	}
+
+	&__link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		height: 2.4rem;
+		padding: 0 0.9rem;
+		border: 1px solid $ink-rule;
+		border-radius: 3px;
+		color: $paper;
+		// Same type treatment as the term chips / footer menu.
+		font-size: 0.78rem;
+		font-weight: $weight-bold;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+
+		&:hover,
+		&:focus {
+			color: $hazard-black;
+			background: $hazard-yellow;
+			border-color: $hazard-yellow;
+		}
+	}
+
+	// Keep Next on the right even when there's no Prev.
+	&__next {
+		margin-left: auto;
+	}
+}
+
 // --- Author box ------------------------------------------------------------
 .author-box {
 	display: flex;

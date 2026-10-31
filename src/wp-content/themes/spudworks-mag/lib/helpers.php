@@ -455,3 +455,47 @@ function spudmagGetReviews($postId) {
 	}
 	return $reviews;
 }
+
+/**
+ * Previous/next image attachments for an image attachment page.
+ *
+ * Steps through the other images uploaded to the same parent post, in the
+ * order WordPress itself uses for attachments (menu_order, then ID), skipping
+ * any non-image media. Unattached images have no siblings, so they get no
+ * navigation rather than a walk through every orphan on the site.
+ *
+ * Returns an array with keys 'prev' and 'next' (int attachment IDs, 0 when
+ * there is none in that direction).
+ */
+function spudmagAdjacentImages($attachmentId) {
+	global $wpdb;
+
+	$adjacent = array('prev' => 0, 'next' => 0);
+	$parentId = (int) wp_get_post_parent_id($attachmentId);
+	if ($parentId === 0) {
+		return $adjacent;
+	}
+
+	// Only IDs are needed to build the links, so skip hydrating posts.
+	$siblingIds = array_map('intval', $wpdb->get_col($wpdb->prepare(
+		"SELECT ID
+		FROM {$wpdb->posts}
+		WHERE post_type = 'attachment'
+			AND post_parent = %d
+			AND post_mime_type LIKE 'image/%%'
+		ORDER BY menu_order ASC, ID ASC",
+		$parentId
+	)));
+
+	$index = array_search((int) $attachmentId, $siblingIds, true);
+	if ($index === false) {
+		return $adjacent;
+	}
+	if ($index > 0) {
+		$adjacent['prev'] = $siblingIds[$index - 1];
+	}
+	if ($index < count($siblingIds) - 1) {
+		$adjacent['next'] = $siblingIds[$index + 1];
+	}
+	return $adjacent;
+}

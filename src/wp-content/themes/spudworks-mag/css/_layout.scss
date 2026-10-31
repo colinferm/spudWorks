@@ -58,7 +58,7 @@
 	margin-top: 0.2rem;
 }
 
-// Nav: a slide-down panel on small screens, an inline row on wide screens.
+// Nav: a slide-down panel on small screens only; never shown on wide screens.
 .primary-nav {
 	display: none;
 	position: absolute;
@@ -73,13 +73,12 @@
 		display: block;
 	}
 
+	// Beats .is-open too, so a panel left open when resizing up stays hidden.
 	@include from($bp-lg) {
-		display: block;
-		position: static;
-		background: transparent;
-		border: 0;
-		padding: 0;
-		width: auto;
+		&,
+		&.is-open {
+			display: none;
+		}
 	}
 }
 
@@ -90,12 +89,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0.25rem;
-
-	@include from($bp-lg) {
-		flex-direction: row;
-		align-items: center;
-		gap: 1.6rem;
-	}
 
 	a {
 		display: block;
@@ -120,15 +113,11 @@
 		color: $hazard-yellow;
 	}
 
-	// Simple second-level dropdown for wide screens.
+	// Second-level items, indented under their parent.
 	.sub-menu {
 		list-style: none;
 		margin: 0;
 		padding: 0 0 0 0.75rem;
-
-		@include from($bp-lg) {
-			padding: 0;
-		}
 	}
 }
 
